@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notes</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧸</text></svg>">
+<style>
+:root {
+--bg: #121212;
+--panel: #1e1e1e;
+--text: #e0e0e0;
+--accent: #3d3d3d;
+--hover: #2a2a2a;
+--border: #333;
+}
+body, html {
+margin: 0;
+padding: 0;
+height: 100%;
+width: 100%;
+font-family: 'Inter', system-ui, sans-serif;
+background: var(--bg);
+color: var(--text);
+overflow: hidden;
+}
+#app {
+display: flex;
+height: 100vh;
+width: 100vw;
+}
+#sidebar {
+width: 300px;
+background: var(--panel);
+border-right: 1px solid var(--border);
+display: flex;
+flex-direction: column;
+}
+.toolbar {
+padding: 1rem;
+display: flex;
+gap: 0.5rem;
+border-bottom: 1px solid var(--border);
+}
+button {
+background: var(--accent);
+color: var(--text);
+border: none;
+padding: 0.5rem;
+cursor: pointer;
+border-radius: 4px;
+font-size: 0.8rem;
+flex: 1;
+}
+button:hover { background: var(--hover); }
+#note-list {
+flex: 1;
+overflow-y: auto;
+}
+.note-item {
+padding: 1rem;
+border-bottom: 1px solid var(--border);
+cursor: pointer;
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
+.note-item:hover { background: var(--hover); }
+.note-item.active { background: var(--accent); }
+.del-btn {
+background: transparent;
+color: #ff5f56;
+flex: none;
+width: auto;
+padding: 0 0.5rem;
+}
+#editor-container {
+flex: 1;
+display: flex;
+flex-direction: column;
+background: var(--bg);
+}
+#editor {
+flex: 1;
+padding: 2rem;
+outline: none;
+overflow-y: auto;
+line-height: 1.6;
+font-size: 1.1rem;
+}
+#editor a {
+color: #8ab4f8;
+text-decoration: underline;
+}
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<div id="app">
+<div id="sidebar">
+<div class="toolbar">
+<button id="btn-new">+ Ny</button>
+<button id="btn-exp">Export</button>
+<button id="btn-imp">Import</button>
+<input type="file" id="file-input" class="hidden" accept=".json">
+</div>
+<div id="note-list"></div>
+</div>
+<div id="editor-container">
+<div id="editor" contenteditable="true"></div>
+</div>
+</div>
+
+<script>
+let db;
+let currentNoteId = null;
+const dbName = "NotesDB";
+const storeName = "notes";
+const request = indexedDB.open(dbName, 1);
+request.onupgradeneeded = e => {
+db = e.target.result;
+db.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
+};
+request.onsuccess = e => {
+db = e.target.result;
+renderList();
+};
+const linkify = (text) => {
+const urlRegex = /(?<!href=")(https?:\/\/[^\s<]+)/g;
+return text.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+};
+const saveNote = () => {
+if (!currentNoteId) return;
+let content = document.getElementById('editor').innerHTML;
+content = linkify(content);
+const tx = db.transaction(storeName, "readwrite");
+const store = tx.objectStore(storeName);
+store.get(currentNoteId).onsuccess = e => {
+const note = e.target.result;
+if (note) {
+store.put({ ...note, content, updated: Date.now() });
+}};
+tx.oncomplete = renderList;
+};
+const renderList = () => {
+const list = document.getElementById('note-list');
+list.innerHTML = '';
+const tx = db.transaction(storeName, "readonly");
+tx.objectStore(storeName).openCursor().onsuccess = e => {
+const cursor = e.target.result;
+if (cursor) {
+const note = cursor.value;
+const div = document.createElement('div');
+div.className = `note-item ${currentNoteId === note.id ? 'active' : ''}`;
+div.innerHTML = `<span>${note.content.replace(/<[^>]*>/g, '').substring(0, 20) || 'Tom note...'}</span><button class="del-btn" data-id="${note.id}">✕</button>`;
+div.onclick = (evt) => {
+if (evt.target.classList.contains('del-btn')) return;
+loadNote(note.id);
+};
+list.appendChild(div);
+cursor.continue();
+}};
+};
+const loadNote = (id) => {
+currentNoteId = id;
+const tx = db.transaction(storeName, "readonly");
+tx.objectStore(storeName).get(id).onsuccess = e => {
+document.getElementById('editor').innerHTML = e.target.result.content;
+};
+renderList();
+};
+document.getElementById('btn-new').onclick = () => {
+const tx = db.transaction(storeName, "readwrite");
+const store = tx.objectStore(storeName);
+store.add({ content: '', updated: Date.now() }).onsuccess = e => {
+currentNoteId = e.target.result;
+document.getElementById('editor').innerHTML = '';
+renderList();
+};
+};
+document.getElementById('note-list').onclick = e => {
+if (e.target.classList.contains('del-btn')) {
+const id = Number(e.target.dataset.id);
+const tx = db.transaction(storeName, "readwrite");
+tx.objectStore(storeName).delete(id).onsuccess = () => {
+if (currentNoteId === id) {
+currentNoteId = null;
+document.getElementById('editor').innerHTML = '';
+}
+renderList();
+};
+}};
+document.getElementById('btn-exp').onclick = () => {
+const notes = [];
+const tx = db.transaction(storeName, "readonly");
+tx.objectStore(storeName).openCursor().onsuccess = e => {
+const cursor = e.target.result;
+if (cursor) { notes.push(cursor.value); cursor.continue(); }
+else {
+const blob = new Blob([JSON.stringify(notes)], { type: 'application/json' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url; a.download = 'notes_export.json'; a.click();
+}};
+};
+document.getElementById('btn-imp').onclick = () => document.getElementById('file-input').click();
+document.getElementById('file-input').onchange = e => {
+const file = e.target.files[0];
+const reader = new FileReader();
+reader.onload = evt => {
+const data = JSON.parse(evt.target.result);
+const tx = db.transaction(storeName, "readwrite");
+const store = tx.objectStore(storeName);
+data.forEach(n => { delete n.id; store.add(n); });
+tx.oncomplete = renderList;
+};
+reader.readAsText(file);
+};
+document.getElementById('editor').onblur = saveNote;
+setInterval(saveNote, 30000);
+document.addEventListener('click', e => {
+if (e.target.tagName === 'A') e.target.target = '_blank';
+});
+document.execCommand('defaultParagraphSeparator', false, 'p');
+</script>
+</body>
+</html>
