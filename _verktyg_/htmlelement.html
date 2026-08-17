@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interaktiv HTML-Elementkarta</title>
+<style>
+  :root {
+    --bg-main: #f8fafc;
+    --bg-card: #ffffff;
+    --border-color: #e2e8f0;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --tag-common: #dbeafe;
+    --tag-common-text: #1e40af;
+    --tag-html5: #dcfce7;
+    --tag-html5-text: #166534;
+    --tag-deprecated: #fee2e2;
+    --tag-deprecated-text: #991b1b;
+    --radius: 12px;
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    line-height: 1.5;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+  .stats {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  .main-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    padding: 1.5rem;
+    gap: 1.5rem;
+  }
+  .sidebar {
+    width: 400px;
+    background-color: var(--bg-card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .search-filter-box {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .search-wrapper {
+    position: relative;
+  }
+  .search-wrapper i {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    width: 16px;
+    height: 16px;
+  }
+  .search-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2.2rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    font-size: 0.875rem;
+    outline: none;
+  }
+  .search-input:focus {
+    border-color: var(--primary);
+  }
+  .filter-tabs {
+    display: flex;
+    gap: 0.25rem;
+    background-color: var(--bg-main);
+    padding: 0.25rem;
+    border-radius: 6px;
+  }
+  .filter-btn {
+    flex: 1;
+    border: none;
+    background: none;
+    padding: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text-muted);
+  }
+  .filter-btn.active {
+    background-color: var(--bg-card);
+    color: var(--text-main);
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  }
+  .elements-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .element-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    background-color: var(--bg-card);
+  }
+  .element-item:hover, .element-item.active {
+    border-color: var(--primary);
+    background-color: var(--bg-main);
+  }
+  .element-tag-name {
+    font-family: monospace;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .badge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .badge-common { background-color: var(--tag-common); color: var(--tag-common-text); }
+  .badge-html5 { background-color: var(--tag-html5); color: var(--tag-html5-text); }
+  .badge-deprecated { background-color: var(--tag-deprecated); color: var(--tag-deprecated-text); }
+  .preview-panel {
+    flex: 1;
+    background-color: var(--bg-card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    gap: 1rem;
+  }
+  .empty-state i {
+    width: 48px;
+    height: 48px;
+  }
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+  }
+  .detail-title {
+    font-family: monospace;
+    font-size: 2rem;
+    color: var(--primary);
+  }
+  .detail-section h3 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .detail-desc {
+    font-size: 1.125rem;
+    background-color: var(--bg-main);
+    padding: 1rem;
+    border-radius: 6px;
+    border-left: 4px solid var(--primary);
+  }
+  .live-demo {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1.5rem;
+    background-color: #fafafa;
+  }
+  
+  .kod2 {font-size: 3rem; margin-bottom: 0.5rem;}
+  .sok {position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.875rem;}
+  @media (max-width: 850px) {
+    .main-container {
+      flex-direction: column;
+    }
+    .sidebar {
+      width: 100%;
+      height: 45vh;
+    }
+    body {
+      height: auto;
+    }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>HTML Element</h1>
+  <div class="stats">
+    <span class="badge badge-common" id="count-common">0 Standard</span>
+    <span class="badge badge-html5" id="count-html5">0 HTML5+</span>
+    <span class="badge badge-deprecated" id="count-deprecated">0 Deprecated</span>
+  </div>
+</header>
+
+<main class="main-container">
+  <section class="sidebar">
+    <div class="search-filter-box">
+      <div class="search-wrapper">
+        <span class="sok">🔍</span>
+        <input type="search" class="search-input" id="search-input" placeholder="Sök element (t.ex. div, article)...">
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-btn active" data-filter="all">Alla</button>
+        <button class="filter-btn" data-filter="common">Standard</button>
+        <button class="filter-btn" data-filter="html5">HTML5+</button>
+        <button class="filter-btn" data-filter="deprecated">Deprecated</button>
+      </div>
+    </div>
+    <div class="elements-list" id="elements-list"></div>
+  </section>
+
+  <section class="preview-panel" id="preview-panel">
+    <div class="empty-state">
+      <span class="kod2">💻</span>
+      <p>Välj ett element för att se förklaring och detaljer.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+  'use strict';
+  const common = {
+    '!DOCTYPE': 'Definierar dokumenttypen',
+    a: 'Definierar en hyperlänk',
+    abbr: 'Definierar en förkortning eller ett akronym',
+    address: 'Definierar kontaktinformation för dokumentets upphovsman/ägare',
+    area: 'Definierar ett område inuti en bildkarta',
+    b: 'Definierar fet text',
+    base: 'Anger bas-URL/mål för alla relativa URL-adresser i ett dokument',
+    bdo: 'Åsidosätter den aktuella textriktningen',
+    blockquote: 'Definierar ett avsnitt som citeras från en annan källa',
+    body: 'Definierar dokumentets brödtext',
+    br: 'Definierar en enskild radbrytning',
+    button: 'Definierar en klickbar knapp',
+    caption: 'Definierar en tabellrubrik',
+    cite: 'Definierar titeln på ett verk',
+    code: 'Definierar en bit datorkod',
+    col: 'Anger kolumnegenskaper för varje kolumn i ett <colgroup>-element',
+    colgroup: 'Anger en grouping av en eller flera kolumner i en tabell för formatering',
+    dd: 'Definierar en beskrivning/värde för en term i en beskrivningslista',
+    del: 'Definierar text som har raderats från ett dokument',
+    dfn: 'Representerar definitionen av en term',
+    div: 'Definierar en sektion i ett dokument',
+    dl: 'Definierar en beskrivningslista',
+    dt: 'Definierar en term/namn i en beskrivningslista',
+    em: 'Definierar betonad text',
+    fieldset: 'Grupperar relaterade element i ett formulär',
+    form: 'Definierar ett HTML-formulär för användarinmatning',
+    h1: 'Definierar HTML-rubriker',
+    h2: 'Definierar HTML-rubriker',
+    h3: 'Definierar HTML-rubriker',
+    h4: 'Definierar HTML-rubriker',
+    h5: 'Definierar HTML-rubriker',
+    h6: 'Definierar HTML-rubriker',
+    head: 'Definierar information om dokumentet',
+    hr: 'Definierar en tematisk förändring i innehållet',
+    html: 'Definierar roten för ett HTML-dokument',
+    i: 'Definierar en del av texten i en alternativ röst eller stämning',
+    iframe: 'Definierar en inbäddad ram',
+    img: 'Definierar en bild',
+    input: 'Definierar en inmatningskontroll',
+    ins: 'Definierar en text som har infogats i ett dokument',
+    kbd: 'Definierar tangentbordsinmatning',
+    label: 'Definierar en etikett för ett <input>-element',
+    legend: 'Definierar en rubrik för ett <fieldset>-element',
+    li: 'Definierar en listpunkt',
+    link: 'Definierar relationen mellan ett dokument och en extern resurs',
+    map: 'Definierar en bildkarta på klientsidan',
+    math: 'Används för att inkludera matematiska uttryck i den aktuella raden',
+    menu: 'Definierar en lista/meny med kommandon',
+    meta: 'Definierar metadata om ett HTML-dokument',
+    noscript: 'Definierar alternativt innehåll för användare som inte stöder skript på klientsidan',
+    object: 'Definierar ett inbäddat objekt',
+    ol: 'Definierar en ordnad lista',
+    optgroup: 'Definierar en grupp av relaterade alternativ i en rullgardinslista',
+    option: 'Definierar ett alternativ i en rullgardinslista',
+    p: 'Definierar ett stycke',
+    param: 'Definierar en parameter for ett objekt',
+    pre: 'Definierar förformaterad text',
+    q: 'Definierar ett kort citat',
+    s: 'Definierar text som inte längre är korrekt',
+    samp: 'Definierar exempelutdata från ett datorprogram',
+    script: 'Definierar ett skript på klientsidan',
+    select: 'Definierar en rullgardinslista',
+    small: 'Definierar mindre text',
+    span: 'Definierar en sektion i ett dokument',
+    strong: 'Definierar viktig text',
+    style: 'Definierar stilinformation för ett dokument',
+    sub: 'Definierar nedsänkt text',
+    sup: 'Definierar upphöjd text',
+    table: 'Definierar en tabell',
+    tbody: 'Grupperar kroppsinnehållet i en tabell',
+    td: 'Definierar en cell i en tabell',
+    textarea: 'Definierar en flerradig inmatningskontroll',
+    tfoot: 'Grupperar sidfotsinnehållet i en tabell',
+    th: 'Definierar en rubrikcell i en tabell',
+    thead: 'Grupperar rubrikinnehållet i en tabell',
+    title: 'Definierar en titel för dokumentet',
+    tr: 'Definierar en rad i en tabell',
+    u: 'Definierar text som ska vara stilistiskt annorlunda än vanlig text',
+    ul: 'Definierar en oordnad lista',
+    var: 'Definierar en variabel'
+  };
+  const html5 = {
+    article: 'Definierar en artikel',
+    aside: 'Definierar innehåll vid sidan av sidans huvudsakliga innehåll',
+    audio: 'Definierar ljudinnehåll',
+    bdi: 'Isolerar en del av en text som kan vara formaterad i en annan riktning än texten utanför',
+    canvas: 'Används för att rita grafik dynamiskt via skript',
+    data: 'Används för att tillhandahålla en maskinläsbar version av det egna innehållet',
+    datalist: 'Anger en lista med fördefinierade alternativ för inmatningskontroller',
+    details: 'Definierar ytterligare detaljer som användaren kan visa eller dölja',
+    dialog: 'Definierar en dialogruta eller ett fönster',
+    embed: 'Definierar en behållare för en extern applikation som inte är HTML',
+    figcaption: 'Definierar en bildtext för ett <figure>-element',
+    figure: 'Anger fristående innehåll',
+    footer: 'Definierar en sidfot för ett dokument eller en sektion',
+    header: 'Definierar ett sidhuvud för ett dokument eller en sektion',
+    hgroup: 'Grupperar en uppsättning rubrikelement',
+    main: 'Anger huvudinnehållet i ett dokument',
+    mark: 'Definierar markerad/framhävd text',
+    meter: 'Definierar en skalär mätning inom ett känt intervall',
+    nav: 'Definierar navigeringslänkar',
+    output: 'Definierar resultatet av en beräkning',
+    picture: 'Definierar en behållare för flera bildresurser',
+    progress: 'Representerar framstegen för en uppgift',
+    rp: 'Definierar vad som ska visas i webbläsare som inte stöder ruby-annoteringar',
+    rt: 'Definierar en förklaring eller ett uttal av tecken',
+    ruby: 'Definierar en ruby-annotering för östasiatisk typografi',
+    search: 'Definierar en group av element relaterade till en sök- eller filtreringsoperation',
+    section: 'Definierar en sektion i ett dokument',
+    slot: 'En platshållare inuti en webbkomponent som kan fyllas med egen markup',
+    source: 'Definierar flera medieresurser för medieelement',
+    summary: 'Definierar en synlig rubrik för ett <details>-element',
+    svg: 'Definierar inbäddat SVG-innehåll',
+    template: 'Används för att deklarera HTML-fragment som kan klonas och infogas via skript',
+    time: 'Definierar ett datum eller en tid',
+    track: 'Definierar textspår för medieelement',
+    video: 'Definierar en video eller film',
+    wbr: 'Definierar en tänkbar radbrytning'
+  };
+  const deprecated = {
+    acronym: 'Stöds inte i HTML5. Använd abbr istället. Definierar ett akronym',
+    applet: 'Stöds inte i HTML5. Använd embed eller object istället. Definierar en inbäddad applet',
+    basefont: 'Stöds inte i HTML5. Använd CSS istället. Anger standardfärg, storlek och typsnitt för all text i ett dokument',
+    big: 'Stöds inte i HTML5. Använd CSS istället. Definierar stor text',
+    blink: 'Stöds inte i HTML5. Använd CSS-animering istället. Gör att texten blinkar',
+    bgsound: 'Stöds inte i HTML5. Använd audio istället. Spelar upp en ljudfil i bakgrunden',
+    center: 'Stöds inte i HTML5. Använd CSS istället. Definierar centrerad text',
+    dir: 'Stöds inte i HTML5. Använd ul istället. Definierar en kataloglista',
+    font: 'Stöds inte i HTML5. Använd CSS istället. Definierar typsnitt, färg och storlek för text',
+    frame: 'Stöds inte i HTML5. Definierar ett fönster i ett ramverk',
+    frameset: 'Stöds inte i HTML5. Definierar en uppsättning ramar',
+    isindex: 'Stöds inte i HTML5. Använd inmatningskontroller istället. Definierar ett enradigt inmatningsfält för sökning',
+    keygen: 'Stöds inte i HTML5. Definierade tidigare ett nyckelpar-genereringsfält för formulär',
+    listing: 'Stöds inte i HTML5. Använd pre istället. Definierar förformaterad text',
+    marquee: 'Stöds inte i HTML5. Använd CSS istället. Skapar en rullande text- eller bildanimering',
+    menuitem: 'Stöds inte i HTML5. Definierade tidigare ett kommando eller ett menyval',
+    multicol: 'Stöds inte i HTML5. Använd CSS multi-column layout istället. Definierar en flerkolumnslayout för text',
+    nextid: 'Stöds inte i HTML5. Användes av tidiga HTML-redigeringsverktyg för att generera unika identifierare',
+    noembed: 'Stöds inte i HTML5. Definierar alternativt innehåll för webbläsare som inte stöder embed-elementet',
+    noframes: 'Stöds inte i HTML5. Definierar alternativt innehåll för användare vars webbläsare inte stöder ramar',
+    plaintext: 'Stöds inte i HTML5. Använd pre istället. Visar text exakt som den skrivits och tolkar inga HTML-taggar',
+    rb: 'Stöds inte i HTML5. Markerade tidigare bastextkomponenten i en ruby-annotering',
+    rtc: 'Stöds inte i HTML5. Markerade tidigare en ruby-textbehållare för ruby-textkomponenter',
+    strike: 'Stöds inte i HTML5. Använd del eller s istället. Definierar genomstruken text',
+    tt: 'Stöds inte i HTML5. Använd CSS istället. Definierar teletyp-text',
+    xmp: 'Stöds inte i HTML5. Använd pre istället. Definierar förformaterad text'
+  };
+  
+  const elementsList = document.getElementById('elements-list');
+  const searchInput = document.getElementById('search-input');
+  const previewPanel = document.getElementById('preview-panel');
+
+  let currentFilter = 'all';
+  let searchQuery = '';
+
+  function getAllElements() {
+    const all = [];
+    Object.keys(common).forEach(k => all.push({ tag: k, desc: common[k], type: 'common' }));
+    Object.keys(html5).forEach(k => all.push({ tag: k, desc: html5[k], type: 'html5' }));
+    Object.keys(deprecated).forEach(k => all.push({ tag: k, desc: deprecated[k], type: 'deprecated' }));
+    return all.sort((a, b) => a.tag.localeCompare(b.tag));
+  }
+
+  function updateStats() {
+    document.getElementById('count-common').textContent = `${Object.keys(common).length} Standard`;
+    document.getElementById('count-html5').textContent = `${Object.keys(html5).length} HTML5+`;
+    document.getElementById('count-deprecated').textContent = `${Object.keys(deprecated).length} Deprecated`;
+  }
+
+  function renderList() {
+    elementsList.innerHTML = '';
+    const items = getAllElements();
+
+    const filtered = items.filter(item => {
+      const matchesFilter = currentFilter === 'all' || item.type === currentFilter;
+const matchesSearch = item.tag.toLowerCase().includes(searchQuery.toLowerCase()) || item.desc.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesFilter && matchesSearch;
+    });
+
+    filtered.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'element-item';
+      div.dataset.tag = item.tag;
+    
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'element-tag-name';
+      nameSpan.textContent = `<${item.tag}>`;
+
+      const typeSpan = document.createElement('span');
+      typeSpan.className = `badge badge-${item.type}`;
+      typeSpan.textContent = item.type === 'common' ? 'Standard' : item.type === 'html5' ? 'HTML5+' : 'Deprecated';
+
+      div.appendChild(nameSpan);
+      div.appendChild(typeSpan);
+    
+      div.addEventListener('click', () => {
+        document.querySelectorAll('.element-item').forEach(el => el.classList.remove('active'));
+        div.classList.add('active');
+        showDetail(item);
+      });
+
+      elementsList.appendChild(div);
+    });
+  }
+  function escapeHTML(str) {
+    return str.replace(/[&<>'"]/g, 
+      tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
+  }
+
+  function generateSafeDemo(tag, type) {
+    if (type === 'deprecated') {
+      return `<p style="color:var(--tag-deprecated-text)">Detta element är föråldrat och skall inte användas.</p>`;
+    }
+    if (tag === '!DOCTYPE' || tag === 'html' || tag === 'head' || tag === 'body' || tag === 'meta' || tag === 'script' || tag === 'link') {
+      return `<p style="color:var(--text-muted)">Strukturellt element - Kan inte förhandsgranskas live här.</p>`;
+    }
+  
+    const safeTag = escapeHTML(tag);
+  
+    if (tag === 'button') return `<button style="padding: 0.5rem 1rem; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer;">Klicka här</button>`;
+    if (tag === 'input') return `<input type="text" placeholder="Skriv något..." style="padding: 0.4rem; border: 1px solid var(--border-color); border-radius: 4px;" />`;
+    if (tag === 'progress') return `<progress value="70" max="100"></progress>`;
+    if (tag === 'mark') return `<p>Detta är en <mark>markerad</mark> text.</p>`;
+    if (tag === 'dialog') return `<div style="padding: 1rem; border: 2px dashed var(--primary); background: white; border-radius: 4px; text-align: center;">Simulerad Dialogruta</div>`;
+  
+    return `<${safeTag}>Exempel på &lt;${safeTag}&gt; element.</${safeTag}>`;
+  }
+
+  function showDetail(item) {
+    const cleanTag = item.tag.replace(/[<>]/g, '');
+    const typeLabel = item.type === 'common' ? 'Standard (HTML4/Modern)' : item.type === 'html5' ? 'Modern HTML5+' : 'Föråldrad (Deprecated)';
+  
+    previewPanel.innerHTML = `
+      <div class="detail-header">
+        <div>
+          <h2 class="detail-title">&lt;${escapeHTML(item.tag)}&gt;</h2>
+          <span class="badge badge-${item.type}" style="margin-top: 0.5rem; display: inline-block;">${typeLabel}</span>
+        </div>
+      </div>
+      <div class="detail-section">
+        <h3>Beskrivning</h3>
+        <p class="detail-desc">${escapeHTML(item.desc)}</p>
+      </div>
+      <div class="detail-section">
+        <h3>Kodexempel</h3>
+        <pre style="background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-family: monospace; overflow-x: auto; font-size: 0.9rem;">&lt;${escapeHTML(cleanTag)}&gt;\n  <!-- Innehåll -->\n&lt;/${escapeHTML(cleanTag)}&gt;</pre>
+      </div>
+      <div class="detail-section">
+        <h3>Live-förhandsgranskning</h3>
+        <div class="live-demo">
+          ${generateSafeDemo(cleanTag, item.type)}
+        </div>
+      </div>
+    `;
+  }
+
+  searchInput.addEventListener('input', (e) => {
+    searchQuery = e.target.value;
+    renderList();
+  });
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      currentFilter = e.target.dataset.filter;
+      renderList();
+    });
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    updateStats();
+    renderList();
+  });
+</script>
+</body>
+</html>
