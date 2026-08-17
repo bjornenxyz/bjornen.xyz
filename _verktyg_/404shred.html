@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+background-color: #0a0a0a;
+color: #00ff41;
+font-family: 'Courier New', Courier, monospace;
+height: 100vh;
+display: flex;
+align-items: center;
+justify-content: center;
+overflow: hidden;
+text-align: center;
+}
+.container {
+padding: 20px;
+max-width: 600px;
+width: 90%;
+}
+.error-code {
+font-size: 8rem;
+font-weight: bold;
+letter-spacing: 20px;
+position: relative;
+display: inline-block;
+color: #444;
+margin-bottom: 20px;
+}
+.error-code::after {
+content: "404";
+position: absolute;
+left: 0;
+top: 0;
+width: 100%;
+height: 50%;
+color: #00ff41;
+overflow: hidden;
+border-bottom: 2px dashed #ff3805;
+animation: shred 3s infinite;
+}
+@keyframes shred {
+0%, 100% { transform: translateY(0); }
+50% { transform: translateY(-5px) skewX(10deg); opacity: 0.5; }
+}
+.command-box {
+background: #111;
+padding: 15px;
+border: 1px solid #333;
+border-radius: 5px;
+margin-bottom: 30px;
+font-size: 0.9rem;
+text-align: left;
+box-shadow: 0 0 15px rgba(0, 255, 65, 0.1);
+}
+.cursor { display: inline-block; width: 10px; height: 1.2rem; background: #00ff41; margin-left: 5px; animation: blink 1s infinite; vertical-align: middle; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.btn-home {
+display: inline-block;
+padding: 12px 30px;
+background: transparent;
+color: #00ff41;
+border: 1px solid #00ff41;
+text-decoration: none;
+text-transform: uppercase;
+font-weight: bold;
+transition: all 0.3s ease;
+border-radius: 3px;
+opacity: 0.3;
+}
+.btn-home:hover {
+opacity: 0.99;
+background: #00ff41;
+color: #0a0a0a;
+box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
+}
+#typed-text {
+white-space: pre-wrap;
+display: inline;
+}
+@media (max-width: 480px) {
+.error-code { font-size: 5rem; }
+h1 { font-size: 1.2rem; }
+.command-box { font-size: 0.8rem; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="error-code">404</div>
+<div class="command-box">
+<span id="typed-text"></span><span class="cursor"></span>
+</div>
+<a href="/" class="btn-home">/null return;</a>
+</div>
+<script>
+const text = "sudo shred -u -v -n 50 /dev/sda ... [OK]\nmounting boot ... [OK]\nboot sector deleted ... [OK]\n/null return;";
+const target = document.getElementById("typed-text");
+let i = 0;
+function typeWriter() {
+if (i < text.length) {
+target.textContent += text.charAt(i);
+i++;
+setTimeout(typeWriter, 100);
+}}
+window.onload = () => setTimeout(typeWriter, 500);
+</script>
+</body>
+</html>
