@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,minimum-scale=1">
+<title>bjornen.xyz</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🇸🇪</text></svg>">
+<style>
+*, &::before, &::after {
+box-sizing: border-box;
+}
+body {
+font-family: monospace, Consolas, Menlo, Monaco, "Andale Mono", "Ubuntu Mono";
+background: #1e1e1e;
+display: flex;
+justify-content: center;
+align-items: center;
+min-height: 100dvh;
+margin: 0;
+}
+.terminal-window {
+width: 98vw;
+height: 98vh;
+background: #1e1e1e;
+border-radius: 3px;
+box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+overflow: hidden;
+font-family: monospace, Consolas, Menlo, Monaco, "Andale Mono", "Ubuntu Mono";
+display: flex;
+flex-direction: column;
+word-break: break-word;
+}
+.terminal-header {
+background: #323233;
+padding: 12px 16px;
+display: flex;
+align-items: center;
+position: relative;
+}
+.buttons {
+display: flex;
+gap: 8px;
+span {
+width: 12px;
+height: 12px;
+border-radius: 50%;
+}}
+.close { background: #ff5f56; }
+.minimize { background: #ffbd2e; }
+.maximize { background: #27c93f; }
+.title {
+position: absolute;
+width: 100%;
+text-align: center;
+left: 0;
+color: #9ca3af;
+font-size: 0.7rem;
+pointer-events: none;
+}
+.terminal-body {
+padding: 25px;
+flex-grow: 1;
+overflow-y: auto;
+color: #e5e5e5;
+font-size: 0.9rem;
+line-height: 1.5;
+}
+.line { margin-bottom: 8px; }
+.highlight { color: #3b82f6; font-weight: bold; }
+.prompt { color: #10b981; margin-right: 8px; }
+.input-line {
+display: flex;
+align-items: center;
+margin-top: 8px;
+}
+#term-input {
+background: transparent;
+border: none;
+color: #e5e5e5;
+font-family: monospace, Consolas, Menlo, Monaco, "Andale Mono", "Ubuntu Mono";
+font-size: 0.9rem;
+outline: none;
+flex-grow: 1;
+}
+.tool {text-decoration:none;color:yellow;padding-bottom:2px;border-bottom:1px solid yellow;}
+.col {
+columns: 2;
+column-gap: 20px;
+list-style-position: inside;
+}
+@media (max-width: 768px){
+.col{
+columns: 1;
+}}
+</style>
+</head>
+<body>
+<div class="terminal-window">
+<div class="terminal-header">
+<div class="buttons">
+<span class="close"></span>
+<span class="minimize"></span>
+<span class="maximize"></span>
+</div>
+<div class="title">root@bjornen:~</div>
+</div>
+<div class="terminal-body" id="term-body">
+<div class="line">This is Sparta! <span class="highlight">hjalp</span> visar tillgängliga kommandon.</div>
+<div id="output-area"></div>
+<div class="input-line">
+<span class="prompt">root@bjornen:~$</span>
+<input type="text" id="term-input" autocomplete="off" autofocus>
+</div></div></div>
+<script>
+const COMMANDS = {
+hjalp: {
+description: "Visa tillgängliga kommandon",
+action: () => [`<b>Blått</b> eller <b>rött</b> piller?`, 
+...Object.keys(COMMANDS).map(cmd => `- <span class="highlight">${cmd}</span>: ${COMMANDS[cmd].description}`)
+]
+},
+bjornen: {
+description: "Nyckelord. Bjornen. Beskrivning.",
+action: () => ["> Lojal och ambiös. Lättsam attityd. Kommer i tid. Produktiv. Läser snabbt sociala situationer, människor likaså. Givmild. Hjälper gärna till, men nyttjas ej."]
+},
+kunskaper: {
+description: "IT/Data och övriga kunskaper",
+action: () => [
+"<b>Icke Data/IT</b>",
+"Kassa, försäljning, lager, butik, schemaläggning, secondhand inkl. värdering.",
+"",
+"<b>Operativsystem</b>",
+"Windows. macOS. Linux. Android. iOS.",
+"",
+"<b>Kundsupport</b>",
+"CSAT: Mät och analysera kundnöjdhet.",
+"KPI: Prestanda via nyckeltal.",
+"SLA: Levererad support inom avtalade tidsramar.",
+"Incident Management: Hantera, prioritera och eskalera.",
+"Ticket-system: Hantering av ärenden.",
+"Teknisk dokumentation: artiklar till kunskapsdatabaser.",
+"",
+"<b>Frontend</b>",
+"Från koncept till färdig design och funktionalitet. HTML, CSS och JS för modern styling av webbsidor, DOM-manipulering, asynkrona anrop, responsiv design &amp; webbtillgänglighet.",
+"",
+"<b>Backend</b>",
+"Server & språk: Apache och PHP.",
+"",
+"<b>Verktyg &amp; Processer</b>",
+"Versionshantering: Git / Github.",
+"Felsökning: DevTools, logganalys och felspårning.",
+"CMS: Tidigare utveckling i WordPress.",
+"cURL: HTTP-anrop för serversvar.",
+""]
+},
+pbrev: {
+description: "Lite av ett personligt brev",
+action: () => ["<strong>35 års intresse, 25 års erfarenhet. Frontend brandsläckare. Använder inte AI. Skriver kod manuellt.</strong>",
+"",
+"Skapar, från grunden oftast, moderna och minimalistiska UX/UI med prestanda, säkerhet, upplevelse och användarvänlighet enligt WC3 bransch standard.",
+"",
+"Tidigare arbetat för företag så som IBM, Microsoft och Apple men valde för ett par år sedan att utmana mig själv inom en helt annan sektor; secondhand.",
+"",
+"På PMU Secondhand i Helsingborg fick jag ansvar för elektronikavdelningen. Resultatet: högst omsättning sedan butikens start med en årsomsättning på över en halv miljon kronor. Min långa erfarenhet har lärt mig hantera krav och önskemål, vilket har skapat en hög nivå av stresstålighet, flexibilitet samt hur man prioriterar för att leverera.",""]
+},
+verktyg: {
+description: "Verktyg. Ett spel. Kan köras offline.",
+action: () => [
+``,
+`<strong>Testa gärna varje demo online.</strong>`,
+
+`<ol class="col">`,
+
+`<li><strong>Faktura System</strong> med export / import > <a class="tool" href="https://bjornen.xyz/_verktyg_/invoice/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>Argon2ID Lösenordsgenerator</strong> med kopiera > <a class="tool" href="https://bjornen.xyz/_verktyg_/argon2id/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>QR-Kod Generator</strong> för URL, mejl, SMS och tel > <a class="tool" href="https://bjornen.xyz/_verktyg_/qr-offline/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>Tick-Tac-Toe</strong> spel med olika ytor > <a class="tool" href="https://bjornen.xyz/_verktyg_/ttt/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>Switch Dark/Light</strong> HTML med localStorage > <a class="tool" href="https://bjornen.xyz/_verktyg_/lightdarkswitch/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>Webbpage Builder</strong> med drag-n-drop och export/import > <a class="tool" href="https://bjornen.xyz/_verktyg_/webbuilder/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>CV/Resume Byggare</strong> med export/import > <a class="tool" href="https://bjornen.xyz/_verktyg_/byggcv/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>HEX Färg</strong> med kopiera knapp > <a class="tool" href="https://bjornen.xyz/_verktyg_/hex/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>404 HTML Sida</strong> med CSS &-operators > <a class="tool" href="https://bjornen.xyz/_verktyg_/404/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>404 Funny Shred</strong> HTML sida > <a class="tool" href="https://bjornen.xyz/_verktyg_/404shred/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>Base64 FavIcon Generator</strong> med preview > <a class="tool" href="https://bjornen.xyz/_verktyg_/fav/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>Bildoptimering</strong> med nerladdning > <a class="tool" href="https://bjornen.xyz/_verktyg_/bilder/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>CRM-system</strong> med export/import > <a class="tool" href="https://bjornen.xyz/_verktyg_/crm/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>ePUB Generator</strong> live editor med nerladdning > <a class="tool" href="https://bjornen.xyz/_verktyg_/epub/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>Markdown Editor</strong> med teman, filer och nerladdning > <a class="tool" href="https://bjornen.xyz/_verktyg_/fulledit/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>GIF-Generator</strong> med tidsinställning, preview och nerladdning > <a class="tool" href="https://bjornen.xyz/_verktyg_/gif/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>HTML Element</strong> info demo med active, deprecated, etc. > <a class="tool" href="https://bjornen.xyz/_verktyg_/htmlelement/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>JS-Errors</strong> info i utbildningssyfte > <a class="tool" href="https://bjornen.xyz/_verktyg_/jserrors/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>Text på bild</strong> med nerladdning mm > <a class="tool" href="https://bjornen.xyz/_verktyg_/imgtext/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>Online Notepad</strong> med export/import > <a class="tool" href="https://bjornen.xyz/_verktyg_/notepad/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>TechQuiz</strong> 20 frågor, olika inriktning > <a class="tool" href="https://bjornen.xyz/_verktyg_/quiz/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>Sitemap Generator</strong> avsedd för sitemap.xml > <a class="tool" href="https://bjornen.xyz/_verktyg_/sitemap/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>Kodsnippet Bild Generator</strong> med prismjs stöd och nerladdning > <a class="tool" href="https://bjornen.xyz/_verktyg_/snippetbild/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>SpeechBox</strong> skriv text, välj språk och hör texteb > <a class="tool" href="https://bjornen.xyz/_verktyg_/speechbox/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>Lär Dig Stava</strong> olika svårigheter med möjlighet att hoppa över ord > <a class="tool" href="https://bjornen.xyz/_verktyg_/stava/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>SVG till Bild</strong> med nerladdning > <a class="tool" href="https://bjornen.xyz/_verktyg_/svg-png/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>TypingSpeed Test</strong> med olika profiler, grafer mm > <a class="tool" href="https://bjornen.xyz/_verktyg_/typingspeed/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>Unicode Selector</strong> bläddra bland tusentals ikoner > <a class="tool" href="https://bjornen.xyz/_verktyg_/unicode/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>JS Timer</strong> med val från dagar och neråt > <a class="tool" href="https://bjornen.xyz/_verktyg_/cdt/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`<li><strong>ASCII till Bild</strong> ej perfekt, men fungerar okej > <a class="tool" href="https://bjornen.xyz/_verktyg_/ascii/index.html" rel="noopener noreferrer" target="_blank">Live Demo</a></li>`,
+
+`</ol>`,
+``
+]
+},
+jobb: {
+description: "Tidigare arbeten och utbildningar",
+action: () => [
+`<strong>Erfarenhet:</strong>`,
+``,
+`• <strong>Elektronik ansvarig på PMU Secondhand, Helsingborg (2020 - 2023)</strong>`,
+`&nbsp;&nbsp;Test och reparation av donerad elektronik. Kassa, kundkontakt, försäljning och marknadsföring samt design av butikens reklam. Att övertala kunden att köpa just "den varan" utan bytesrätt eller garanti var en rolig utmaning.`,
+``,
+
+`• <strong>Webbutvecklare E-handel på Quadriga AB 2017 - 2018</strong>`,
+`&nbsp;&nbsp;Skapade hemsidor i renodlad HTML med JavaScript och CSS samt PHP. Vissa sidor skapades med WordPress. Min huvuduppgift var att optimera så att laddningstiden låg på max 500ms.`,
+``,
+
+`• <strong>iOS Utvecklare, Apple Irland 2013 - 2013</strong>`,
+`&nbsp;&nbsp;Utveckling, test och kontroll av funktioner, menyer med mera i nya versioner av iOS för iPhone. Gjorde även kontroller av appar med Swift.`,
+``,
+
+`• <strong>Säljare och Reparationstekniker, Newton Store (Apple ÅF) 2012 - 2012</strong>`,
+`&nbsp;&nbsp;Försäljning, felsökning och reperationer av Apple produkter så som iPhone, iPad och MacBook.`,
+``,
+
+`• <strong>Gaming Manager, Besedo Malta 2011 - 2012</strong>`,
+`&nbsp;&nbsp;Ansvarig för ett kundsupport team på 12st agenter. Kundsupport åt Betsson, Blocket, m fl.`,
+``,
+
+`• <strong>Kvalitét och Utbildning, Microsoft Irland 2010 - 2011</strong>`,
+`&nbsp;&nbsp;Grundorsaksanalyser i syfte att skapa träning och utbildningsmaterial för supporten med fokus på KPI och CSAT. Felsökning av hård- och mjukvara vilket sedan användes i utbildningssyfte.`,
+``,
+
+`• <strong>Kvalitétsspecialist, IBM Irland 2008 - 2010</strong>`,
+`&nbsp;&nbsp;Grundorsaksanalyser för att åtgärda incidenter och problem för supporten och kunderna. KPI och CSAT.`,
+``,
+
+`• <strong>Kundsupport, IBM Irland 2006 - 2008</strong>`,
+`&nbsp;&nbsp;Telefon- och e-postsupport åt Nordea, Nokia, Carlsberg m fl. Besvarade mellan 50-200 samtal/mejl per dag.`,
+``,
+
+`<hr>`,
+`<strong>Utbildning</strong>`,
+`• 1995 - 1997: Gymnasie, 3-årig linje - Handel & Administration (ej komplett)`,
+`&nbsp;&nbsp;Övrigt: Webbutveckling, online kurser (pågående)`,
+``,
+`<strong>Språk</strong>`,
+`• Engelska och Svenska: flytande tal och skrift`,
+``,
+``
+]
+},
+ref: {
+description: "Folk som tyckte jag gjorde ett bra jobb",
+action: () => ["> Referenser lämnas gärna vid förfrågan. För mina kontaktuppgifter, använd <span class='highlight'>kontakt</span>"]
+},
+kontakt: {
+description: "Hur du får tag på mig",
+action: () => [
+`<strong> > <a style='text-decoration:none;color:white' href='tel:+46734295510'>Samtala med mig</a></strong>`,
+`<strong> > <a style='text-decoration:none;color:white' href='mailto:bjornen.xyz@proton.me'>bjornen.xyz@proton.me</a></strong>`,
+`<strong> > Hemsida:</strong> ja, det är där du befinner dig just nu...`
+]
+},
+whoami: {
+description: "Kontouppgifter",
+action: () => [
+``,
+`ingetOS v1.0.0.0.0.0 | root admin | not inloggad`,
+``,
+`<strong>För att veta mer får du helt enkelt kontakta mig.</strong>`,
+]
+},
+hacka: {
+description: "Hacka systemet",
+type: "flexible",
+action: () => ["🔍 <b>Kritisk bugg hittad:</b> ingen intervju bokad med dig."]
+},
+komedi: {
+description: "Dagens citat",
+action: () => {
+const quotes = [
+"Hur kan man vara admin av en rot?",
+"DOM? Stavas det inte DUM?",
+"Inte kul då kroppen react från båda hållen samtidigt...",
+"Koden funka ju i går, va fan hände idag?",
+"Gymmet? Lyft ett ramverk så får du se hur lätt det är.",
+"CSS är perfekt för allt. Du kan till och med få en body att försvinna..."
+];
+return [quotes[Math.floor(Math.random() * quotes.length)]];
+}},
+kaffe: {
+description: "En kopp på egen begäran...",
+type: "flexible",
+action: async (output) => {
+const line = document.createElement("div");
+line.className = "line";
+output.appendChild(line);
+const stages = [
+"🫘 Rostar... [] 0%",
+"🫘 Lite mer... [||] 20%",
+"🫘 Bönorna klara... [||||] 40%",
+"⚙️ Maler... [||||||] 60%",
+"💨 Brygger... [||||||||] 80%",
+"Kaffet klart! [||||||||||] 100%"
+];
+for (let stage of stages) {
+line.innerHTML = stage;
+elements.body.scrollTo({ top: elements.body.scrollHeight, behavior: "smooth" });
+await new Promise(resolve => setTimeout(resolve, 2000));
+}
+line.innerHTML += "<br>Mmm, behöver en kopp ☕️ när man skapar en <b>Tor-node</b>...";
+return null;
+}},
+rensa: {
+description: "Återställ",
+action: () => null
+},
+exit: {
+description: "Stäng Terminalen",
+type: "flexible",
+action: () => ["🚪 Stäng tabben och sen fönstret..."]
+},
+matrix: {
+description: "Matrix-mode",
+type: "flexible",
+action: async (output) => {
+const line = document.createElement("div");
+line.className = "line";
+line.style.color = "#00ff00";
+output.appendChild(line);
+for (let i = 0; i < 10; i++) {
+line.innerHTML = Array.from({length: 20}, () => Math.round(Math.random())).join(" ");
+elements.body.scrollTo({ top: elements.body.scrollHeight, behavior: "smooth" });
+await new Promise(resolve => setTimeout(resolve, 800));
+}
+line.innerHTML = "Välkommen till ditt medvetande på den platta jorden. <b>Vad du än gör, blunda inte...</b>";
+return null;
+}}};
+const elements = {
+input: document.getElementById("term-input"),
+output: document.getElementById("output-area"),
+body: document.getElementById("term-body")
+};
+if (elements.input && elements.output && elements.body) {
+elements.input.addEventListener("keydown", async (e) => {
+if (e.key !== "Enter") return;
+const rawVal = elements.input.value;
+const cleanVal = rawVal.trim().toLowerCase();
+elements.input.value = "";
+if (cleanVal === "rensa" || cleanVal === "clear") {
+elements.output.innerHTML = "";
+const msg = document.createElement("div");
+msg.className = "line";
+msg.innerHTML = "<b>work() !== null; ?</b><br>Min arbetslöshet kan ju du ändra på, frågan är == vill du?";
+elements.output.appendChild(msg);
+return;
+}
+const fragment = document.createDocumentFragment();
+const historyLine = document.createElement("div");
+historyLine.className = "line";
+const promptSpan = document.createElement("span");
+promptSpan.className = "prompt";
+promptSpan.textContent = "root@bjornen:~$ ";
+const textSpan = document.createElement("span");
+textSpan.textContent = rawVal;
+historyLine.appendChild(promptSpan);
+historyLine.appendChild(textSpan);
+fragment.appendChild(historyLine);
+if (cleanVal !== "") {
+const commandKey = Object.keys(COMMANDS).find(key => {
+if (COMMANDS[key].type === "flexible") {
+return cleanVal.startsWith(key);
+}
+return cleanVal === key;
+});
+const command = COMMANDS[commandKey];
+if (command) {
+if (command.action.constructor.name === 'AsyncFunction') {
+elements.output.appendChild(fragment);
+await command.action(elements.output);
+elements.body.scrollTo({ top: elements.body.scrollHeight, behavior: "smooth" });
+return;
+} else {
+const result = command.action(elements.output);
+const responseText = Array.isArray(result) ? result.join("<br>") : result;
+if (responseText !== null) {
+const responseLine = document.createElement("div");
+responseLine.className = "line";
+responseLine.innerHTML = responseText;
+fragment.appendChild(responseLine);
+}}} else {
+const responseLine = document.createElement("div");
+responseLine.className = "line";
+responseLine.innerHTML = `Internal Server Error ${cleanVal} 500`;
+fragment.appendChild(responseLine);
+}}
+elements.output.appendChild(fragment);
+elements.body.scrollTo({
+top: elements.body.scrollHeight,
+behavior: "smooth"
+});
+});
+elements.body.addEventListener("click", () => {
+elements.input.focus();
+});
+}
+</script>	
+</body>
+</html>
