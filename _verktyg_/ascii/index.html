@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PNG/JPG → ASCII med dithering</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #f6f7fb; color: #111; }
+
+    #app { height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      background: #fff;
+      border-bottom: 1px solid #e6e6e6;
+    }
+
+    .hidden { display: none !important; }
+
+    .btn {
+      appearance: none;
+      border: 1px solid #cfcfcf;
+      background: #f7f7f7;
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .btn:hover { background: #efefef; }
+
+    .pill {
+      padding: 7px 10px;
+      border: 1px solid #e2e2e2;
+      border-radius: 999px;
+      background: #fafafa;
+      color: #333;
+      font-weight: 700;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 14px;
+      padding: 14px;
+      min-height: 0;
+    }
+
+    .panel, .previewWrap {
+      background: #fff;
+      border: 1px solid #e6e6e6;
+      border-radius: 16px;
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .panel { padding: 12px; }
+
+    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+
+    .row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; margin: 10px 0; }
+    label { font-weight: 800; color: #222; font-size: 13px; }
+
+    input[type="range"] { width: 230px; max-width: 100%; }
+    input[type="text"], select {
+      width: 100%;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid #d9d9d9;
+      background: #fff;
+      font-weight: 650;
+    }
+
+    input[type="checkbox"] { width: 18px; height: 18px; accent-color: #4b79ff; }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .hint { font-size: 12px; color: #666; line-height: 1.35; margin: 6px 0 0; }
+
+	#asciiOut {
+	  height: auto;
+	  min-height: 260px;
+	  background: #0b0b0b;
+	  color: #f2f2f2;
+	  box-sizing: border-box;
+	  margin: 0;
+	  display: block;
+	  overflow: auto;
+	  padding: 12px;
+	  border: 1px solid #e6e6e6;
+	  border-radius: 16px;
+	  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+	  font-size: 10px;
+	  line-height: 1;
+	  white-space: pre;
+	}
+
+    .dropArea {
+      border: 2px dashed #cfcfcf;
+      border-radius: 16px;
+      padding: 12px;
+      min-height: 160px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      place-items: center;
+      background: #fafafa;
+      outline: none;
+    }
+    .dropArea.drag { border-color: #4b79ff; background: #f0f4ff; }
+
+    #dropText { width: 100%; display: grid; place-items: center; gap: 6px; }
+
+    #previewCanvas { max-width: 100%; height: auto; display: block; }
+
+    .rightTop {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .smallBtn {
+      appearance: none;
+      border: 1px solid #cfcfcf;
+      background: #f7f7f7;
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .smallBtn:hover { background: #efefef; }
+
+    .previewBottom { min-height: 0; }
+
+    @media (max-width: 980px) {
+      .main { grid-template-columns: 1fr; }
+      input[type="range"] { width: 100%; }
+      .grid2 { grid-template-columns: 1fr; }
+      .row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="header">
+      <input id="fileInput" class="hidden" type="file" accept="image/png,image/jpeg" />
+      <button id="uploadBtn" class="btn" type="button">Ladda upp bild</button>
+      <div id="statusPill" class="pill">Ingen bild vald</div>
+    </div>
+
+    <div class="main">
+      <div id="panel" class="panel">
+        <div class="toolbar" style="margin-bottom: 6px;">
+          <div class="pill">ASCII</div>
+          <div class="pill" id="dimPill">—</div>
+        </div>
+
+        <div class="row">
+          <label for="widthRange">Storlek (bredd i tecken)</label>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+            <div id="widthVal" class="pill">120</div>
+          </div>
+        </div>
+        <input id="widthRange" type="range" min="30" max="220" step="1" value="120" />
+
+        <div class="row">
+          <label for="contrastRange">Kontrast</label>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+            <div id="contrastVal" class="pill">1.15</div>
+          </div>
+        </div>
+        <input id="contrastRange" type="range" min="0.6" max="2.2" step="0.01" value="1.15" />
+
+        <div class="row">
+          <label for="gammaRange">Gamma</label>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+            <div id="gammaVal" class="pill">1.00</div>
+          </div>
+        </div>
+        <input id="gammaRange" type="range" min="0.5" max="2.2" step="0.01" value="1.00" />
+
+        <div class="row">
+          <label for="invertToggle">Invertera</label>
+          <div>
+            <input id="invertToggle" type="checkbox" />
+          </div>
+        </div>
+
+        <div class="row">
+          <label for="ditherToggle">Dithering</label>
+          <div>
+            <input id="ditherToggle" type="checkbox" checked />
+          </div>
+        </div>
+
+        <div class="row">
+          <label for="charAspectRange">Teckenproportion</label>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+            <div id="charAspectVal" class="pill">0.55</div>
+          </div>
+        </div>
+        <input id="charAspectRange" type="range" min="0.35" max="0.85" step="0.01" value="0.55" />
+
+        <div class="row">
+          <label for="bgFixToggle">Bakgrundskorrigering (svart bg)</label>
+          <div>
+            <input id="bgFixToggle" type="checkbox" checked />
+          </div>
+        </div>
+
+        <div style="margin-top: 12px;" class="grid2">
+          <div style="grid-column: span 2;">
+            <label for="gradientSelect">Gradient (mörkt → ljust)</label>
+            <select id="gradientSelect">
+              <option value="@%#*+=-:. ">Classic</option>
+              <option value="█▓▒░. ">Blocky">Blocky</option>
+              <option value="&@8%#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/|()1{}[]?-_+~<>i!lI;:,\"^`'. ">Rich</option>
+              <option value=" .:-=+*#%@">Light</option>
+              <option value="@$B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/|()1{}[]?-_+~<>i!lI;:,\"^`'.">Ultra</option>
+            </select>
+            <div class="hint">Om du vill, skriv egen gradient i fältet under.</div>
+          </div>
+
+          <div style="grid-column: span 2;">
+            <label for="gradientInput">Egen gradient</label>
+            <input id="gradientInput" type="text" value="@%#*+=-:. " />
+          </div>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <div class="row" style="margin-top: 0;">
+            <label for="fgSelect">Teckenfärg (ASCII)</label>
+            <select id="fgSelect">
+              <option value="#f2f2f2">Ljus</option>
+              <option value="#ffffff">Vitt</option>
+              <option value="#c7f9cc">Mint</option>
+              <option value="#a0d8ff">Blå</option>
+              <option value="#ffe08a">Gul</option>
+              <option value="#ff9aa2">Rosa</option>
+            </select>
+          </div>
+          <div class="row" style="margin-top: 0;">
+            <label for="bgSelect">Bakgrund (ASCII)</label>
+            <select id="bgSelect">
+              <option value="#0b0b0b">Svart</option>
+              <option value="#101826">Natt</option>
+              <option value="#1a1a1a">Kol</option>
+              <option value="#ffffff">Vit</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <div class="hint">Dra & släpp bilden i rutan till höger för att köra direkt.</div>
+        </div>
+      </div>
+
+      <div class="previewWrap">
+        <div class="rightTop">
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <div class="pill" id="modePill">Dithering: På</div>
+            <div class="pill" id="gradientLenPill">Gradient: 11</div>
+          </div>
+
+          <div class="actions">
+            <button id="downloadPngBtn" class="smallBtn" type="button">Ladda ner PNG</button>
+            <button id="downloadJpgBtn" class="smallBtn" type="button">Ladda ner JPG</button>
+          </div>
+        </div>
+
+        <div id="dropArea" class="dropArea" tabindex="0" role="button" aria-label="Dra och släpp bild här">
+          <div id="dropText" style="text-align:center;">
+            <div style="font-weight:800;color:#222;margin-bottom:6px;">Dra & släpp</div>
+            <div style="font-size:13px;color:#555;">PNG eller JPG till ytan här</div>
+          </div>
+          <canvas id="previewCanvas" width="640" height="360" class="hidden"></canvas>
+        </div>
+
+        <div style="min-height:0;">
+          <pre id="asciiOut">Lägg in en bild för att generera ASCII.</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const uploadBtn = document.getElementById('uploadBtn');
+    const fileInput = document.getElementById('fileInput');
+    const statusPill = document.getElementById('statusPill');
+    const dimPill = document.getElementById('dimPill');
+
+    const dropArea = document.getElementById('dropArea');
+    const previewCanvas = document.getElementById('previewCanvas');
+    const dropText = document.getElementById('dropText');
+
+    const widthRange = document.getElementById('widthRange');
+    const widthVal = document.getElementById('widthVal');
+
+    const contrastRange = document.getElementById('contrastRange');
+    const contrastVal = document.getElementById('contrastVal');
+
+    const gammaRange = document.getElementById('gammaRange');
+    const gammaVal = document.getElementById('gammaVal');
+
+    const invertToggle = document.getElementById('invertToggle');
+    const ditherToggle = document.getElementById('ditherToggle');
+
+    const charAspectRange = document.getElementById('charAspectRange');
+    const charAspectVal = document.getElementById('charAspectVal');
+
+    const bgFixToggle = document.getElementById('bgFixToggle');
+
+    const gradientSelect = document.getElementById('gradientSelect');
+    const gradientInput = document.getElementById('gradientInput');
+
+    const fgSelect = document.getElementById('fgSelect');
+    const bgSelect = document.getElementById('bgSelect');
+
+    const asciiOut = document.getElementById('asciiOut');
+
+    const modePill = document.getElementById('modePill');
+    const gradientLenPill = document.getElementById('gradientLenPill');
+
+    const downloadPngBtn = document.getElementById('downloadPngBtn');
+    const downloadJpgBtn = document.getElementById('downloadJpgBtn');
+
+    const offCanvas = document.createElement('canvas');
+    const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+
+    let currentImage = null;
+    let lastAscii = { text: "", w: 0, h: 0, glyphW: 8, glyphH: 12 };
+
+    function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+    function luminance(r,g,b){
+      return 0.2126*r + 0.7152*g + 0.0722*b;
+    }
+
+    function applyContrastGamma(lin, contrast, gamma){
+      let x = lin;
+      x = (x - 0.5) * contrast + 0.5;
+      x = clamp(x, 0, 1);
+      x = Math.pow(x, gamma);
+      return x;
+    }
+
+    function measureGlyph(){
+      const test = document.createElement('span');
+      test.style.position = 'fixed';
+      test.style.left = '-10000px';
+      test.style.top = '-10000px';
+      test.style.fontFamily = getComputedStyle(asciiOut).fontFamily;
+      test.style.fontSize = getComputedStyle(asciiOut).fontSize;
+      test.style.lineHeight = getComputedStyle(asciiOut).lineHeight;
+      test.style.whiteSpace = 'pre';
+      test.textContent = 'M';
+      document.body.appendChild(test);
+      const rect = test.getBoundingClientRect();
+      document.body.removeChild(test);
+      const lineHeight = parseFloat(getComputedStyle(asciiOut).lineHeight);
+      return {
+        glyphW: Math.ceil(rect.width) || 8,
+        glyphH: Math.ceil(isNaN(lineHeight) ? rect.height : lineHeight) || 12
+      };
+    }
+
+    function getGradientChars(){
+      const g = (gradientInput.value || "").toString();
+      return g.length ? g : "@%#*+=-:. ";
+    }
+
+    function getCharRange(){
+      const gradient = getGradientChars();
+      const chars = gradient.split('');
+      return { gradient, chars };
+    }
+
+    function updateLabels(){
+      widthVal.textContent = widthRange.value;
+      contrastVal.textContent = Number(contrastRange.value).toFixed(2);
+      gammaVal.textContent = Number(gammaRange.value).toFixed(2);
+      charAspectVal.textContent = Number(charAspectRange.value).toFixed(2);
+
+      modePill.textContent = "Dithering: " + (ditherToggle.checked ? "På" : "Av");
+
+      const grad = getGradientChars();
+      gradientLenPill.textContent = "Gradient: " + grad.length;
+    }
+
+    async function loadFromFile(file){
+      if (!file) return;
+      statusPill.textContent = "Läser bild…";
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.decoding = "async";
+      img.src = url;
+      await img.decode();
+      currentImage = { img, url, file };
+      previewCanvas.classList.remove('hidden');
+      const maxW = dropArea.clientWidth - 24;
+      const scale = Math.min(1, maxW / img.width);
+      const w = Math.max(1, Math.floor(img.width * scale));
+      const h = Math.max(1, Math.floor(img.height * scale));
+      previewCanvas.width = w;
+      previewCanvas.height = h;
+      offCanvas.width = img.width;
+      offCanvas.height = img.height;
+      offCtx.clearRect(0,0,offCanvas.width,offCanvas.height);
+      offCtx.drawImage(img, 0, 0);
+
+      const pctx = previewCanvas.getContext('2d', { willReadFrequently: true });
+      pctx.clearRect(0,0,previewCanvas.width,previewCanvas.height);
+      pctx.drawImage(img, 0, 0, previewCanvas.width, previewCanvas.height);
+
+      URL.revokeObjectURL(url);
+      currentImage.url = null;
+
+      dropText.classList.add('hidden');
+      statusPill.textContent = "Bild klar";
+      generateAscii();
+    }
+
+    function drawAsciiToDataCanvas(width, height, glyphW, glyphH){
+      const dataCanvas = document.createElement('canvas');
+      const ctx = dataCanvas.getContext('2d', { willReadFrequently: false });
+      dataCanvas.width = width * glyphW;
+      dataCanvas.height = height * glyphH;
+
+      const bg = bgSelect.value;
+      const fg = fgSelect.value;
+
+      ctx.fillStyle = bg;
+      ctx.fillRect(0,0,dataCanvas.width,dataCanvas.height);
+
+      ctx.fillStyle = fg;
+      ctx.textBaseline = 'top';
+      ctx.font = `${Math.max(6, parseInt(getComputedStyle(asciiOut).fontSize, 10) || 10)}px ${getComputedStyle(asciiOut).fontFamily}`;
+      ctx.imageSmoothingEnabled = false;
+
+      const lines = lastAscii.text.split('\n');
+      for (let y=0; y<height; y++){
+        const line = lines[y] ?? "";
+        ctx.fillText(line, 0, y * glyphH);
+      }
+      return dataCanvas;
+    }
+
+    function downloadCanvasAs(type, filename, canvas, quality){
+      canvas.toBlob((blob)=>{
+        if (!blob) return;
+        const a = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(()=>URL.revokeObjectURL(url), 2000);
+      }, type, quality);
+    }
+
+    function generateAscii(){
+      if (!currentImage) return;
+
+      const img = currentImage.img;
+
+      const targetWidth = parseInt(widthRange.value, 10);
+      const charAspect = parseFloat(charAspectRange.value);
+      const targetHeight = Math.max(1, Math.round(targetWidth * (img.height / img.width) * charAspect));
+
+      const offW = targetWidth;
+      const offH = targetHeight;
+
+      offCanvas.width = offW;
+      offCanvas.height = offH;
+
+      offCtx.clearRect(0,0,offW,offH);
+      offCtx.drawImage(img, 0, 0, offW, offH);
+
+      const imgData = offCtx.getImageData(0, 0, offW, offH);
+      const data = imgData.data;
+
+      const contrast = parseFloat(contrastRange.value);
+      const gamma = parseFloat(gammaRange.value);
+      const invert = invertToggle.checked;
+      const dither = ditherToggle.checked;
+      const bgFix = bgFixToggle.checked;
+
+      const { gradient } = getCharRange();
+      const gradientChars = gradient.split('');
+      const steps = gradientChars.length;
+
+      const pixelLum = new Float32Array(offW * offH);
+      for (let i=0, p=0; i<data.length; i+=4, p++){
+        const r = data[i], g = data[i+1], b = data[i+2];
+        let lum = luminance(r,g,b) / 255;
+        if (bgFix){
+          const maxCh = Math.max(r,g,b) / 255;
+          const minCh = Math.min(r,g,b) / 255;
+          const sat = maxCh - minCh;
+          const satBoost = 1 - (sat * 0.15);
+          lum = clamp(lum * satBoost, 0, 1);
+        }
+        if (invert) lum = 1 - lum;
+        lum = applyContrastGamma(lum, contrast, gamma);
+        pixelLum[p] = lum;
+      }
+
+      let out = "";
+      if (!dither){
+        for (let y=0; y<offH; y++){
+          for (let x=0; x<offW; x++){
+            const p = y * offW + x;
+            const v = pixelLum[p];
+            const idx = clamp(Math.floor(v * (steps - 1) + 1e-9), 0, steps - 1);
+            out += gradientChars[idx];
+          }
+          out += "\n";
+        }
+      } else {
+        const buf = pixelLum.slice();
+        for (let y=0; y<offH; y++){
+          for (let x=0; x<offW; x++){
+            const p = y * offW + x;
+            const old = buf[p];
+            const idx = clamp(Math.floor(old * (steps - 1) + 1e-9), 0, steps - 1);
+            const newVal = idx / (steps - 1);
+            const err = old - newVal;
+            buf[p] = newVal;
+
+            out += gradientChars[idx];
+
+            const distribute = (nx, ny, factor)=>{
+              if (nx < 0 || ny < 0 || nx >= offW || ny >= offH) return;
+              buf[ny * offW + nx] = clamp(buf[ny * offW + nx] + err * factor, 0, 1);
+            };
+
+            distribute(x + 1, y    , 7/16);
+            distribute(x - 1, y + 1, 3/16);
+            distribute(x    , y + 1, 5/16);
+            distribute(x + 1, y + 1, 1/16);
+          }
+          out += "\n";
+        }
+      }
+
+      asciiOut.textContent = out;
+      asciiOut.style.color = fgSelect.value;
+      asciiOut.style.background = bgSelect.value;
+
+      const glyph = measureGlyph();
+      lastAscii.text = out.trimEnd();
+      lastAscii.w = offW;
+      lastAscii.h = offH;
+      lastAscii.glyphW = glyph.glyphW;
+      lastAscii.glyphH = glyph.glyphH;
+
+      dimPill.textContent = offW + "×" + offH;
+    }
+
+    function schedule(){
+      updateLabels();
+      clearTimeout(schedule.t);
+      schedule.t = setTimeout(()=>generateAscii(), 60);
+    }
+
+    uploadBtn.addEventListener('click', ()=>fileInput.click());
+
+    fileInput.addEventListener('change', (e)=>{
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      loadFromFile(file);
+      e.target.value = "";
+    });
+
+    ;['input','change'].forEach(evt=>{
+      widthRange.addEventListener(evt, schedule);
+      contrastRange.addEventListener(evt, schedule);
+      gammaRange.addEventListener(evt, schedule);
+      invertToggle.addEventListener(evt, schedule);
+      ditherToggle.addEventListener(evt, schedule);
+      charAspectRange.addEventListener(evt, schedule);
+      bgFixToggle.addEventListener(evt, schedule);
+      gradientSelect.addEventListener(evt, ()=>{
+        gradientInput.value = gradientSelect.value;
+        schedule();
+      });
+      gradientInput.addEventListener(evt, schedule);
+      fgSelect.addEventListener(evt, schedule);
+      bgSelect.addEventListener(evt, schedule);
+    });
+
+    downloadPngBtn.addEventListener('click', ()=>{
+      if (!lastAscii.text) return;
+      const { w, h, glyphW, glyphH } = lastAscii;
+      const c = drawAsciiToDataCanvas(w, h, glyphW, glyphH);
+      const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+      downloadCanvasAs('image/png', `ascii-${ts}.png`, c);
+    });
+
+    downloadJpgBtn.addEventListener('click', ()=>{
+      if (!lastAscii.text) return;
+      const { w, h, glyphW, glyphH } = lastAscii;
+      const c = drawAsciiToDataCanvas(w, h, glyphW, glyphH);
+      const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+      downloadCanvasAs('image/jpeg', `ascii-${ts}.jpg`, c, 0.92);
+    });
+
+    function setDrag(on){
+      if (on){
+        dropArea.classList.add('drag');
+      } else {
+        dropArea.classList.remove('drag');
+      }
+    }
+
+    dropArea.addEventListener('dragenter', (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      setDrag(true);
+    });
+    dropArea.addEventListener('dragover', (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      setDrag(true);
+    });
+    dropArea.addEventListener('dragleave', (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      setDrag(false);
+    });
+    dropArea.addEventListener('drop', (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      setDrag(false);
+      const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (!file) return;
+      loadFromFile(file);
+    });
+
+    updateLabels();
+  </script>
+</body>
+</html>

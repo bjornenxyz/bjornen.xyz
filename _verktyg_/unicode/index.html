@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Unicode-visare</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .block-container { margin-top: 30px; }
+        h2 { margin-bottom: 10px; color: #333; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+        td { border: 1px solid #ccc; padding: 10px; text-align: center; font-size: 18px; width: 14.28%; cursor: pointer; }
+		td:hover { background-color: #f0f0f0; color: blue; transform: scale(1.3); transition: transform 0.1s ease; }
+        .hex { font-size: 11px; color: #666; display: block; margin-top: 4px; pointer-events: none; }
+        td div { pointer-events: none; }
+        button { padding: 10px 15px; font-size: 16px; cursor: pointer; margin-right: 10px; }
+        #status { font-weight: bold; margin: 15px 0; }
+        #tablesContainer { margin-top: 20px; }
+        .search-container { margin-bottom: 15px; position: relative; display: inline-block; width: 300px; }
+        .search-input { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; }
+        .search-results { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; }
+        .search-item { padding: 10px; cursor: pointer; }
+        .search-item:hover { background-color: #f0f0f0; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 12px 20px; border-radius: 4px; font-size: 14px; z-index: 10000; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <h1>Stödda tecken via UTF-8</h1>
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="Sök efter Unicode-block..." oninput="filterBlocks()">
+        <div id="searchResults" class="search-results"></div>
+    </div>
+    <div id="controls">
+        <button id="startBtn" onclick="renderNextBlock()">Starta kontroll</button>
+        <button id="resetBtn" onclick="resetApp()">Återställ</button>
+    </div>
+    <div id="status">Klicka på knappen för att börja.</div>
+    
+    <div id="tablesContainer"></div>
+    <div id="toast" class="toast"></div>
+
+<script>
+	let unicodeBlocks = [];
+	let currentBlockIndex = 0;
+
+	async function initieraUnicode() {
+	    try {
+	        const response = await fetch('./signrange.json');
+	        const data = await response.json();
+        
+	        unicodeBlocks = data.map(block => ({
+	            name: block.category,
+	            start: block.range[0],
+	            end: block.range[1]
+	        }));
+        
+	        const btn = document.getElementById('startBtn');
+	        if (btn && unicodeBlocks.length > 0) {
+	            btn.innerText = `Visa ${unicodeBlocks[0].name}`;
+	        }
+	    } catch (error) {
+	        document.getElementById('status').innerText = "Kunde inte ladda signrange.json";
+	    }
+	}
+
+	initieraUnicode();
+
+	function isCharacterSupported(char) {
+	    const canvas = document.createElement('canvas');
+	    const ctx = canvas.getContext('2d');
+	    ctx.font = '16px sans-serif';
+	    const noSupportWidth = ctx.measureText('\uFFFF').width;
+	    const testWidth = ctx.measureText(char).width;
+
+	    if (testWidth === 0 || testWidth === noSupportWidth) {
+	        return false;
+	    }
+	    return true;
+	}
+
+	function listSupportedCharacters(start, end) {
+	    const supported = [];
+	    for (let i = start; i <= end; i++) {
+	        try {
+	            const char = String.fromCodePoint(i);
+	            if (isCharacterSupported(char)) {
+	                supported.push({ hex: 'U+' + i.toString(16).toUpperCase(), char: char });
+	            }
+	        } catch(e) {
+	            continue; 
+	        }
+	    }
+	    return supported;
+	}
+
+	function kopieraTecken(char) {
+	    navigator.clipboard.writeText(char).then(() => {
+	        visaToast(`Kopierade ${char}`);
+	    });
+	}
+
+	let toastTimeout;
+	function visaToast(meddelande) {
+	    const toast = document.getElementById('toast');
+	    toast.innerText = meddelande;
+	    toast.classList.add('show');
+    
+	    clearTimeout(toastTimeout);
+	    toastTimeout = setTimeout(() => {
+	        toast.classList.remove('show');
+	    }, 2000);
+	}
+	function drawTable(characters, blockName) {
+	    if (characters.length === 0) {
+	        return;
+	    }
+
+	    const container = document.getElementById('tablesContainer');
+	    const blockDiv = document.createElement('div');
+	    blockDiv.className = 'block-container';
+    
+	    const title = document.createElement('h2');
+	    title.innerText = `${blockName} (${characters.length} st)`;
+	    blockDiv.appendChild(title);
+    
+	    const table = document.createElement('table');
+	    let row = table.insertRow();
+	    let colCount = 0;
+    
+	    characters.forEach(item => {
+	        if (colCount === 7) {
+	            row = table.insertRow();
+	            colCount = 0;
+	        }
+        
+	        const cell = row.insertCell();
+	        cell.innerHTML = `<div>${item.char}</div><span class="hex">${item.hex}</span>`;
+	        cell.onclick = function() {
+	            kopieraTecken(item.char);
+	        };
+	        colCount++;
+	    });
+    
+	    blockDiv.appendChild(table);
+	    container.prepend(blockDiv);
+	}
+
+	function renderNextBlock() {
+	    if (unicodeBlocks.length === 0) {
+	        return;
+	    }
+
+	    if (currentBlockIndex >= unicodeBlocks.length) {
+	        document.getElementById('status').innerText = "Alla valda block har gåtts igenom!";
+	        document.getElementById('startBtn').style.display = "none";
+	        return;
+	    }
+    
+	    const currentBlock = unicodeBlocks[currentBlockIndex];
+	    document.getElementById('status').innerText = `Analyserar och visar: ${currentBlock.name}...`;
+    
+	    setTimeout(() => {
+	        const supportedChars = listSupportedCharacters(currentBlock.start, currentBlock.end);
+	        drawTable(supportedChars, currentBlock.name);
+        
+	        currentBlockIndex++;
+        
+	        const btn = document.getElementById('startBtn');
+	        if (currentBlockIndex < unicodeBlocks.length) {
+	            document.getElementById('status').innerText = `Klar med: ${currentBlock.name}. Hittade ${supportedChars.length} tecken.`;
+	            btn.innerText = `Visa ${unicodeBlocks[currentBlockIndex].name}`;
+	        } else {
+	            document.getElementById('status').innerText = `Klar! Alla block har analyserats.`;
+	            btn.style.display = 'none';
+	        }
+	    }, 50);
+	}
+
+	function filterBlocks() {
+	    const input = document.getElementById('searchInput').value.trim().toLowerCase();
+	    const resultsDiv = document.getElementById('searchResults');
+	    resultsDiv.innerHTML = '';
+    
+	    if (!input) {
+	        resultsDiv.style.display = 'none';
+	        return;
+	    }
+    
+	    if (input.startsWith('u+')) {
+	        const hexStr = input.substring(2);
+	        if (hexStr) {
+	            const codePoint = parseInt(hexStr, 16);
+	            if (!isNaN(codePoint)) {
+	                try {
+	                    const char = String.fromCodePoint(codePoint);
+	                    const cleanHex = 'U+' + hexStr.toUpperCase();
+                    
+	                    const item = document.createElement('div');
+	                    item.className = 'search-item';
+	                    item.innerText = `${cleanHex} (${char})`;
+	                    item.onclick = () => selectSingleCharacter(char, cleanHex);
+	                    resultsDiv.appendChild(item);
+	                } catch(e) {}
+	            }
+	        }
+	    } else {
+	        const filtered = unicodeBlocks.filter(block => block.name.toLowerCase().includes(input));
+	        filtered.forEach(block => {
+	            const item = document.createElement('div');
+	            item.className = 'search-item';
+	            item.innerText = block.name;
+	            item.onclick = () => selectBlock(block);
+	            resultsDiv.appendChild(item);
+	        });
+	    }
+    
+	    if (resultsDiv.children.length === 0) {
+	        resultsDiv.style.display = 'none';
+	        return;
+	    }
+    
+	    resultsDiv.style.display = 'block';
+	}
+
+	function selectSingleCharacter(char, hex) {
+	    document.getElementById('searchInput').value = '';
+	    document.getElementById('searchResults').style.display = 'none';
+    
+	    if (isCharacterSupported(char)) {
+	        document.getElementById('status').innerText = `Visar sökt tecken: ${hex}`;
+	        drawTable([{ hex: hex, char: char }], `Sökt tecken`);
+	    } else {
+	        document.getElementById('status').innerText = `Tecknet ${hex} stöds inte av din webbläsare.`;
+	    }
+	}
+
+	function selectBlock(block) {
+	    document.getElementById('searchInput').value = '';
+	    document.getElementById('searchResults').style.display = 'none';
+	    document.getElementById('status').innerText = `Analyserar och visar: ${block.name}...`;
+    
+	    setTimeout(() => {
+	        const supportedChars = listSupportedCharacters(block.start, block.end);
+	        drawTable(supportedChars, block.name);
+        
+	        const index = unicodeBlocks.findIndex(b => b.name === block.name);
+	        if (index !== -1) {
+	            currentBlockIndex = index + 1;
+	            const btn = document.getElementById('startBtn');
+	            if (currentBlockIndex < unicodeBlocks.length) {
+	                document.getElementById('status').innerText = `Klar med: ${block.name}. Hittade ${supportedChars.length} tecken.`;
+	                btn.innerText = `Visa ${unicodeBlocks[currentBlockIndex].name}`;
+	                btn.style.display = 'inline-block';
+	            } else {
+	                document.getElementById('status').innerText = `Klar! Alla block har analyserats.`;
+	                btn.style.display = 'none';
+	            }
+	        }
+	    }, 50);
+	}
+
+	function resetApp() {
+	    currentBlockIndex = 0;
+	    document.getElementById('searchInput').value = '';
+	    document.getElementById('searchResults').style.display = 'none';
+	    document.getElementById('tablesContainer').innerHTML = '';
+	    document.getElementById('status').innerText = 'Klicka på knappen för att börja.';
+    
+	    const btn = document.getElementById('startBtn');
+	    if (btn && unicodeBlocks.length > 0) {
+	        btn.innerText = `Starta kontroll: ${unicodeBlocks[0].name}`;
+	        btn.style.display = 'inline-block';
+	    }
+	}
+
+	document.addEventListener('click', function(e) {
+	    if (!e.target.closest('.search-container')) {
+	        document.getElementById('searchResults').style.display = 'none';
+	    }
+	});
+</script>
+
+</body>
+</html>
