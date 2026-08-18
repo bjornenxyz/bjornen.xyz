@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe Deluxe</title>
+    <style>
+		* {
+		    box-sizing: border-box;
+		    margin: 0;
+		    padding: 0;
+		    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+		}
+		body {
+		    display: flex;
+		    min-height: 100vh;
+		    background-color: #e3f2fd;
+		    color: #0d47a1;
+		}
+		.sidebar {
+		    width: 320px;
+		    background-color: #bbdefb;
+		    padding: 25px;
+		    display: flex;
+		    flex-direction: column;
+		    gap: 20px;
+		    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+		    z-index: 10;
+		}
+		h1, h2 {
+		    text-align: center;
+		    color: #0d47a1;
+		}
+		.form-group {
+		    display: flex;
+		    flex-direction: column;
+		    gap: 5px;
+		}
+		label {
+		    font-weight: 600;
+		    font-size: 14px;
+		}
+		input, select {
+			font-family: inherit;
+		    padding: 20px;
+		    border: 2px solid #90caf9;
+		    border-radius: 3px;
+		    outline: none;
+		    font-size: inherit;
+		    background-color: #eee;
+		    color: #0d47a1;
+		}
+		input:focus, select:focus {
+		    border-color: #1e88e5;
+		}
+		button {
+		    padding: 12px;
+		    background-color: #1e88e5;
+		    color: #fafafa;
+		    border: none;
+		    border-radius: 6px;
+		    font-weight: bold;
+		    cursor: pointer;
+		    transition: background 0.2s;
+		    font-size: inherit;
+			font-family: inherit;
+		}
+		button:hover {
+		    background-color: #1565c0;
+		}
+		.score-board {
+		    background-color: rgba(255,255,255,0.6);
+		    padding: 15px;
+		    border-radius: 8px;
+		    border: 1px solid #90caf9;
+		}
+		.score-line {
+		    display: flex;
+		    justify-content: space-between;
+		    margin: 5px 0;
+		    font-weight: 500;
+		}
+		.main-content {
+		    flex: 1;
+		    display: flex;
+		    flex-direction: column;
+		    align-items: center;
+		    justify-content: center;
+		    padding: 40px;
+		}
+		.status {
+		    font-size: 24px;
+		    font-weight: bold;
+		    margin-bottom: 25px;
+		    text-align: center;
+		    min-height: 35px;
+		}
+		.grid {
+		    display: grid;
+		    gap: 12px;
+		    background-color: #90caf9;
+		    padding: 12px;
+		    border-radius: 12px;
+		    box-shadow: 0 8px 20px rgba(13, 71, 161, 0.15);
+		}
+		.cell {
+		    background-color: #ffffff;
+		    border-radius: 8px;
+		    display: flex;
+		    align-items: center;
+		    justify-content: center;
+		    font-size: 4.5rem;
+		    font-weight: bold;
+		    cursor: pointer;
+		    transition: background 0.2s, transform 0.1s;
+		    user-select: none;
+		    width: 150px;
+		    height: 150px;
+		}
+		.cell:hover {
+		    background-color: #f1f8ff;
+		}
+		.cell:active {
+		    transform: scale(0.96);
+		}
+		.cell.x {
+		    color: #1565c0;
+		}
+		.cell.o {
+		    color: #e53935;
+		}
+		.cell.taken {
+		    cursor: not-allowed;
+		}
+		</style>
+</head>
+<body>
+<div class="sidebar">
+    <h1>Inställningar</h1>
+    
+    <div class="form-group">
+        <label for="gameMode">Spelläge</label>
+        <select id="gameMode">
+            <option value="ai">Mot datorn</option>
+            <option value="pvp">Två spelare</option>
+        </select>
+    </div>
+
+    <!-- Ny meny för svårighetsgrad -->
+    <div class="form-group" id="difficultyContainer">
+        <label for="difficulty">Svårighetsgrad</label>
+        <select id="difficulty">
+            <option value="0">Lätt</option>
+            <option value="1">Medium</option>
+            <option value="2" selected>Svår</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="gridSize">Storlek på spelyta</label>
+        <select id="gridSize">
+            <option value="3x3">3 × 3 (Standard)</option>
+            <option value="3x4">3 × 4</option>
+            <option value="4x4">4 × 4</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="winCondition">Antal i rad för vinst</label>
+        <select id="winCondition">
+            <option value="3">3 i rad</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="p1Name">Spelare 1 (X)</label>
+        <input type="text" id="p1Name" value="Spelare 1">
+    </div>
+
+    <div class="form-group" id="p2Container">
+        <label for="p2Name" id="p2Label">Dator (O)</label>
+        <input type="text" id="p2Name" value="Dator" disabled>
+    </div>
+
+    <button id="restartBtn">Starta om spelet</button>
+
+    <div class="score-board">
+        <h2>Poäng</h2>
+        <div class="score-line">
+            <span id="scoreP1Name">Spelare 1:</span>
+            <span id="scoreP1">0</span>
+        </div>
+        <div class="score-line">
+            <span id="scoreP2Name">Dator:</span>
+            <span id="scoreP2">0</span>
+        </div>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="status" id="statusText"></div>
+    <div class="grid" id="board"></div>
+</div>
+
+<script>
+	const state = {
+	    rows: 3,
+	    cols: 3,
+	    neededToWin: 3,
+	    board: [],
+	    currentPlayer: 'X',
+	    isActive: true,
+	    mode: 'ai',
+	    difficulty: 2,
+	    p1: 'Spelare 1',
+	    p2: 'Dator',
+	    scores: { X: 0, O: 0 }
+	};
+
+	const elements = {
+	    gameMode: document.getElementById('gameMode'),
+	    difficulty: document.getElementById('difficulty'),
+	    gridSize: document.getElementById('gridSize'),
+	    winCondition: document.getElementById('winCondition'),
+	    p1Name: document.getElementById('p1Name'),
+	    p2Name: document.getElementById('p2Name'),
+	    p2Label: document.getElementById('p2Label'),
+	    restartBtn: document.getElementById('restartBtn'),
+	    scoreP1Name: document.getElementById('scoreP1Name'),
+	    scoreP2Name: document.getElementById('scoreP2Name'),
+	    scoreP1: document.getElementById('scoreP1'),
+	    scoreP2: document.getElementById('scoreP2'),
+	    statusText: document.getElementById('statusText'),
+	    board: document.getElementById('board'),
+	    difficultyContainer: document.getElementById('difficultyContainer')
+	};
+
+	const init = () => {
+	    setupEventListeners();
+	    updateWinOptions();
+	    updateNames();
+	    resetGame();
+	};
+
+	const setupEventListeners = () => {
+	    elements.gameMode.addEventListener('change', (e) => {
+	        state.mode = e.target.value;
+	        if (state.mode === 'ai') {
+	            elements.p2Name.value = 'Dator';
+	            elements.p2Name.disabled = true;
+	            elements.p2Label.textContent = 'Dator (O)';
+	            elements.difficultyContainer.style.display = 'block';
+	        } else {
+	            if (elements.p2Name.value === 'Dator') elements.p2Name.value = 'Spelare 2';
+	            elements.p2Name.disabled = false;
+	            elements.p2Label.textContent = 'Spelare 2 (O)';
+	            elements.difficultyContainer.style.display = 'none';
+	        }
+	        updateNames();
+	        resetGame();
+	    });
+
+	    elements.difficulty.addEventListener('change', (e) => {
+	        state.difficulty = parseInt(e.target.value);
+	        resetGame();
+	    });
+
+	    elements.gridSize.addEventListener('change', (e) => {
+	        const [r, c] = e.target.value.split('x').map(Number);
+	        state.rows = r;
+	        state.cols = c;
+	        updateWinOptions();
+	        resetGame();
+	    });
+
+	    elements.winCondition.addEventListener('change', (e) => {
+	        state.neededToWin = parseInt(e.target.value);
+	        resetGame();
+	    });
+
+	    elements.p1Name.addEventListener('input', updateNames);
+	    elements.p2Name.addEventListener('input', updateNames);
+	    elements.restartBtn.addEventListener('click', resetGame);
+	};
+
+	const updateWinOptions = () => {
+	    const maxDim = Math.max(state.rows, state.cols);
+	    const currentVal = state.neededToWin;
+	    elements.winCondition.innerHTML = '';
+
+	    for (let i = 3; i <= 5; i++) {
+	        if (i <= maxDim) {
+	            const opt = document.createElement('option');
+	            opt.value = i;
+	            opt.textContent = `${i} i rad`;
+	            elements.winCondition.appendChild(opt);
+	        }
+	    }
+
+	    if (currentVal <= maxDim) {
+	        elements.winCondition.value = currentVal;
+	        state.neededToWin = currentVal;
+	    } else {
+	        elements.winCondition.value = 3;
+	        state.neededToWin = 3;
+	    }
+	};
+
+	const updateNames = () => {
+	    state.p1 = elements.p1Name.value.trim() || 'Spelare 1';
+	    state.p2 = elements.p2Name.value.trim() || (state.mode === 'ai' ? 'Dator' : 'Spelare 2');
+	    elements.scoreP1Name.textContent = `${state.p1}:`;
+	    elements.scoreP2Name.textContent = `${state.p2}:`;
+	    updateStatus();
+	};
+
+	const updateStatus = () => {
+	    if (!state.isActive) return;
+	    const currentName = state.currentPlayer === 'X' ? state.p1 : state.p2;
+	    elements.statusText.textContent = `Det är ${currentName} tur`;
+	};
+
+	const resetGame = () => {
+	    state.board = Array(state.rows * state.cols).fill('');
+	    state.currentPlayer = 'X';
+	    state.isActive = true;
+	    renderBoard();
+	    updateStatus();
+	};
+
+	const renderBoard = () => {
+	    elements.board.innerHTML = '';
+	    elements.board.style.gridTemplateRows = `repeat(${state.rows}, 150px)`;
+	    elements.board.style.gridTemplateColumns = `repeat(${state.cols}, 150px)`;
+
+	    for (let i = 0; i < state.board.length; i++) {
+	        const cell = document.createElement('div');
+	        cell.classList.add('cell');
+	        cell.dataset.index = i;
+
+	        if (state.board[i]) {
+	            cell.textContent = state.board[i];
+	            cell.classList.add(state.board[i].toLowerCase(), 'taken');
+	        }
+
+	        cell.addEventListener('click', handleCellClick);
+	        elements.board.appendChild(cell);
+	    }
+	};
+
+	const handleCellClick = (e) => {
+	    const index = parseInt(e.target.dataset.index);
+	    if (state.board[index] !== '' || !state.isActive) return;
+
+	    makeMove(index);
+
+	    if (state.isActive && state.mode === 'ai' && state.currentPlayer === 'O') {
+	        setTimeout(makeAIMove, 300);
+	    }
+	};
+
+	const makeMove = (index) => {
+	    state.board[index] = state.currentPlayer;
+	    renderBoard();
+
+	    if (checkWin(state.currentPlayer)) {
+	        elements.statusText.textContent = `${state.currentPlayer === 'X' ? state.p1 : state.p2} vinner!`;
+	        state.scores[state.currentPlayer]++;
+	        elements.scoreP1.textContent = state.scores.X;
+	        elements.scoreP2.textContent = state.scores.O;
+	        state.isActive = false;
+	        return;
+	    }
+
+	    if (!state.board.includes('')) {
+	        elements.statusText.textContent = 'Oavgjort! Testa gärna igen.';
+	        state.isActive = false;
+	        return;
+	    }
+
+	    state.currentPlayer = state.currentPlayer === 'X' ? 'O' : 'X';
+	    updateStatus();
+	};
+
+	const makeAIMove = () => {
+	    const emptyIndices = state.board.map((val, idx) => val === '' ? idx : null).filter(val => val !== null);
+	    if (emptyIndices.length === 0 || !state.isActive) return;
+
+	    const strategies = [];
+
+	    strategies.push(() => {
+	        for (let idx of emptyIndices) {
+	            state.board[idx] = 'O';
+	            if (checkWin('O')) { state.board[idx] = ''; return idx; }
+	            state.board[idx] = '';
+	        }
+	        return null;
+	    });
+
+	    strategies.push(() => {
+	        for (let idx of emptyIndices) {
+	            state.board[idx] = 'X';
+	            if (checkWin('X')) { state.board[idx] = ''; return idx; }
+	            state.board[idx] = '';
+	        }
+	        return null;
+	    });
+
+	    strategies.push(() => {
+	        const centerIdx = Math.floor((state.rows * state.cols) / 2);
+	        return emptyIndices.includes(centerIdx) ? centerIdx : null;
+	    });
+
+	    const startIndex = 2 - state.difficulty; 
+	    for (let i = startIndex; i < strategies.length; i++) {
+	        const bestMove = strategies[i]();
+	        if (bestMove !== null) {
+	            makeMove(bestMove);
+	            return;
+	        }
+	    }
+
+	    const randomIndex = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+	    makeMove(randomIndex);
+	};
+
+	const checkWin = (player) => {
+	    const r = state.rows;
+	    const c = state.cols;
+	    const needed = state.neededToWin;
+	    const getIndex = (row, col) => row * c + col;
+
+	    for (let row = 0; row < r; row++) {
+	        for (let col = 0; col <= c - needed; col++) {
+	            let win = true;
+	            for (let i = 0; i < needed; i++) {
+	                if (state.board[getIndex(row, col + i)] !== player) win = false;
+	            }
+	            if (win) return true;
+	        }
+	    }
+
+	    for (let col = 0; col < c; col++) {
+	        for (let row = 0; row <= r - needed; row++) {
+	            let win = true;
+	            for (let i = 0; i < needed; i++) {
+	                if (state.board[getIndex(row + i, col)] !== player) win = false;
+	            }
+	            if (win) return true;
+	        }
+	    }
+
+	    for (let row = 0; row <= r - needed; row++) {
+	        for (let col = 0; col <= c - needed; col++) {
+	            let win = true;
+	            for (let i = 0; i < needed; i++) {
+	                if (state.board[getIndex(row + i, col + i)] !== player) win = false;
+	            }
+	            if (win) return true;
+	        }
+	    }
+
+	    for (let row = needed - 1; row < r; row++) {
+	        for (let col = 0; col <= c - needed; col++) {
+	            let win = true;
+	            for (let i = 0; i < needed; i++) {
+	                if (state.board[getIndex(row - i, col + i)] !== player) win = false;
+	            }
+	            if (win) return true;
+	        }
+	    }
+	    return false;
+	};
+
+	init();
+</script>
+</body>
+</html>

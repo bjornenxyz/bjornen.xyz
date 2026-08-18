@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="sv-SE" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EditMD</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.min.js"></script>
+<style id="base-styles">
+:root {
+--bg-color: #f8f9fa;
+--header-bg: #ffffff;
+--text-color: #212529;
+--border-color: #dee2e6;
+--editor-bg: #ffffff;
+--divider-bg: #007bff;
+--tab-bg: #e9ecef;
+--tab-active: #007bff;
+}
+
+[data-theme="dark"] {
+--bg-color: #1e1e1e;
+--header-bg: #2d2d2d;
+--text-color: #e0e0e0;
+--border-color: #444;
+--editor-bg: #252526;
+--tab-bg: #3c3c3c;
+}
+
+* { box-sizing: border-box; }
+body, html {
+margin: 0; padding: 0;
+height: 100vh;
+font-family: system-ui, sans-serif;
+background-color: var(--bg-color);
+color: var(--text-color);
+overflow: hidden;
+}
+
+header {
+position: sticky;
+top: 0;
+height: 60px;
+background: var(--header-bg);
+border-bottom: 1px solid var(--border-color);
+display: flex;
+align-items: center;
+padding: 0 15px;
+z-index: 100;
+gap: 15px;
+}
+
+.controls { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+button, select {
+padding: 6px 12px;
+border-radius: 4px;
+border: 1px solid var(--border-color);
+background: var(--editor-bg);
+color: var(--text-color);
+cursor: pointer;
+font-size: 14px;
+}
+
+#tab-container {
+display: flex;
+gap: 5px;
+overflow-x: auto;
+flex: 1;
+align-items: center;
+}
+
+.tab {
+padding: 3px 12px;
+background: var(--tab-bg);
+border: 2px solid var(--border-color);
+border-radius: 4px;
+cursor: pointer;
+white-space: nowrap;
+display: flex;
+align-items: center;
+gap: 8px;
+font-size: 14px;
+min-width: 80px;
+max-width: 200px;
+transition: all 0.2s;
+}
+
+.tab.active {
+background: var(--editor-bg);
+border-color: var(--tab-active);
+font-weight: bold;
+}
+
+.tab-name {
+outline: none;
+overflow: hidden;
+text-overflow: ellipsis;
+padding: 2px 4px;
+}
+
+.tab-close { 
+opacity: 0.4; 
+font-weight: bold; 
+margin-left: auto;
+}
+.tab-close:hover { color: #dc3545; opacity: 1; }
+
+.main-container {
+display: flex;
+height: calc(100vh - 60px);
+width: 100%;
+}
+
+#editor-pane {
+width: 50%;
+min-width: 100px;
+display: flex;
+flex-direction: column;
+background: var(--editor-bg);
+}
+
+textarea {
+width: 100%;
+height: 100%;
+border: none;
+padding: 20px;
+font-family: system-ui;
+font-size: 16px;
+resize: none;
+outline: none;
+background: transparent;
+color: inherit;
+}
+
+#divider {
+width: 8px;
+cursor: col-resize;
+background: var(--border-color);
+flex-shrink: 0;
+z-index: 10;
+}
+#divider:hover, .is-resizing #divider { background: var(--divider-bg); }
+
+#preview-pane {
+flex: 1;
+min-width: 100px;
+background: #fafafa;
+}
+
+iframe { width: 100%; height: 100%; border: none; background: #fafafa; }
+.is-resizing iframe { pointer-events: none; }
+#status-indicator { font-size: 11px; opacity: 0.5; margin-right: 5px; }
+#new-file-btn { background: var(--editor-bg); border: 1px solid var(--border-color); color: inherit; font-weight: 600; border: none; }
+#download-file-btn::before{
+content:"";
+display:inline-block;
+width:5px;
+height:5px;
+margin-right:8px;
+border-right:3px solid currentColor;
+border-bottom:3px solid currentColor;
+transform: rotate(45deg) translateY(-1px);
+}
+#download-file-btn { background-color: var(--border-color); color: inherit; font-weight: 600; border: none;}
+#code-input { 
+color: inherit; 
+}
+#code-input::placeholder { 
+color: var(--text-color); 
+opacity: 0.5;
+}
+</style>
+</head>
+<body id="app-body">
+
+<header>
+<div class="controls">
+<button id="theme-toggle">🌙 Mörkt</button>
+<select id="style-preset">
+<option value="none">Standard</option>
+<option value="modern">Modern</option>
+<option value="retro">Retro</option>
+<option value="elegant">Elegant</option>
+</select>
+</div>
+
+<div id="tab-container"></div>
+
+<div class="controls">
+<span id="status-indicator"></span>
+<button id="new-file-btn">+ Nytt Dok</button>
+</div>
+</header>
+
+<div class="main-container" id="container">
+<section id="editor-pane">
+<textarea id="code-input" spellcheck="false" placeholder="Här skriver du Markdown och / eller vanlig HTML. Resultatet visas till höger."></textarea>
+</section>
+<div id="divider"></div>
+<section id="preview-pane">
+<iframe id="output-frame"></iframe>
+</section>
+</div>
+
+<script>
+const input = document.getElementById('code-input');
+const output = document.getElementById('output-frame');
+const themeBtn = document.getElementById('theme-toggle');
+const stylePreset = document.getElementById('style-preset');
+const divider = document.getElementById('divider');
+const editorPane = document.getElementById('editor-pane');
+const appBody = document.getElementById('app-body');
+const tabContainer = document.getElementById('tab-container');
+const status = document.getElementById('status-indicator');
+let db;
+let currentFileId = null;
+const defaultContent = ``;
+
+const request = indexedDB.open("MultiEditorDB", 1);
+request.onupgradeneeded = (e) => {
+e.target.result.createObjectStore("Files", { keyPath: "id", autoIncrement: true });
+};
+request.onsuccess = (e) => {
+db = e.target.result;
+refreshTabs();
+};
+
+function saveCurrent() {
+if (!currentFileId || !db) return;
+status.textContent = "Sparar...";
+const tx = db.transaction("Files", "readwrite");
+const store = tx.objectStore("Files");
+store.get(currentFileId).onsuccess = (e) => {
+const data = e.target.result;
+if (!data) return;
+data.content = input.value;
+store.put(data);
+};
+tx.oncomplete = () => { status.textContent = "Sparat"; };
+}
+
+function createNewFile() {
+const tx = db.transaction("Files", "readonly");
+const store = tx.objectStore("Files");
+store.getAll().onsuccess = (e) => {
+const existingFiles = e.target.result;
+const baseName = "dokument_";
+const ext = ".md";
+let finalName = baseName + ext;
+let counter = 1;
+const names = existingFiles.map(f => f.name);
+while (names.includes(finalName)) {
+finalName = `${baseName}_${counter}${ext}`;
+counter++;
+}
+const writeTx = db.transaction("Files", "readwrite");
+const request = writeTx.objectStore("Files").add({
+name: finalName,
+content: defaultContent
+});
+request.onsuccess = (ev) => {
+currentFileId = ev.target.result;
+refreshTabs();
+};
+};
+}
+
+function updateFileName(id, newName) {
+if (!newName || newName.trim() === "") return;
+const tx = db.transaction("Files", "readwrite");
+const store = tx.objectStore("Files");
+store.get(id).onsuccess = (e) => {
+const data = e.target.result;
+data.name = newName;
+store.put(data);
+};
+}
+
+function deleteFile(id, e) {
+e.stopPropagation();
+if (!confirm("Radera fil?")) return;
+const tx = db.transaction("Files", "readwrite");
+tx.objectStore("Files").delete(id).onsuccess = () => {
+if (currentFileId === id) currentFileId = null;
+refreshTabs();
+};
+}
+
+function refreshTabs() {
+tabContainer.innerHTML = "";
+const tx = db.transaction("Files", "readonly");
+tx.objectStore("Files").getAll().onsuccess = (e) => {
+const files = e.target.result;
+if (files.length === 0) { input.value = ""; updatePreview(); return; }
+if (!currentFileId) currentFileId = files[files.length - 1].id;
+files.forEach(file => {
+const tab = document.createElement("div");
+tab.className = `tab ${file.id === currentFileId ? 'active' : ''}`;
+const nameSpan = document.createElement("div");
+nameSpan.className = "tab-name";
+nameSpan.textContent = file.name;
+nameSpan.contentEditable = "true";
+nameSpan.spellcheck = false;
+nameSpan.addEventListener('blur', () => updateFileName(file.id, nameSpan.textContent));
+nameSpan.addEventListener('keydown', (ev) => {
+if (ev.key === 'Enter') { ev.preventDefault(); nameSpan.blur(); }
+});
+
+const closeBtn = document.createElement("span");
+closeBtn.className = "tab-close";
+closeBtn.innerHTML = "×";
+closeBtn.onclick = (ev) => deleteFile(file.id, ev);
+tab.appendChild(nameSpan);
+tab.appendChild(closeBtn);
+tab.onclick = () => { if(currentFileId !== file.id) { currentFileId = file.id; refreshTabs(); } };
+tabContainer.appendChild(tab);
+if (file.id === currentFileId) {
+input.value = file.content;
+updatePreview();
+}});
+};
+}
+
+function updatePreview() {
+const rawValue = input.value;
+const styleMatch = rawValue.match(/<style>([\s\S]*?)<\/style>/i);
+const scriptMatch = rawValue.match(/<script>([\s\S]*?)<\/script>/i);
+const bodyMatch = rawValue.match(/<body>([\s\S]*?)<\/body>/i);
+const styleContent = styleMatch ? styleMatch[1] : '';
+const scriptContent = scriptMatch ? scriptMatch[1] : '';
+let bodyRaw = bodyMatch ? bodyMatch[1] : rawValue.replace(/<(style|script)>[\s\S]*?<\/\1>/gi, '');
+let bodyContent = bodyRaw;
+try {
+if (window.marked && typeof window.marked.parse === 'function') {
+bodyContent = window.marked.parse(bodyRaw);
+}} catch (e) {
+console.error("md error:", e);
+}
+
+const presets = {
+none: "body{font-family:Verdana;line-height:1.5;max-width:100%;margin:auto;padding:20px}",
+modern: "body{font-family:system-ui;line-height:1.5;max-width:100%;margin:auto;padding:20px}",
+retro: "body{background:#000;color:#EEE;font-family:monospace;padding:20px;line-height:1.5} h1,h2,h3,p{margin:20px 0;}",
+elegant: "body{font-family:Arial;background:#EEE;color:#222;padding:20px;line-height:1.5}"
+};
+
+const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${presets[stylePreset.value] || ""}</style><style>${styleContent}</style></head>
+<body>${bodyContent}<script>${scriptContent}<\/script></body></html>`;
+
+const doc = output.contentDocument || output.contentWindow.document;
+doc.open(); doc.write(fullHtml); doc.close();
+}
+
+let isResizing = false;
+divider.addEventListener('mousedown', () => { 
+isResizing = true; 
+appBody.classList.add('is-resizing'); 
+});
+window.addEventListener('mousemove', (e) => {
+if (!isResizing) return;
+let p = (e.clientX / window.innerWidth) * 100;
+if (p > 5 && p < 95) editorPane.style.width = `${p}%`;
+});
+window.addEventListener('mouseup', () => { 
+isResizing = false; 
+appBody.classList.remove('is-resizing'); 
+});
+
+document.getElementById('new-file-btn').onclick = createNewFile;
+function downloadCurrentFile() {
+if (!currentFileId || !db) return;
+const tx = db.transaction("Files", "readonly");
+const store = tx.objectStore("Files");
+const req = store.get(currentFileId);
+req.onsuccess = (e) => {
+const data = e.target.result;
+const baseName = (data && data.name) ? data.name.replace(/\.md$/i, '') : 'dokument';
+const fileName = `${baseName}.md`;
+const blob = new Blob([input.value], { type: 'text/markdown;charset=utf-8' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = fileName;
+document.body.appendChild(a);
+a.click();
+a.remove();
+URL.revokeObjectURL(url);
+};
+}
+
+function addDownloadButtonNextToNew() {
+const newBtn = document.getElementById('new-file-btn');
+if (!newBtn) return;
+const downloadBtn = document.createElement('button');
+downloadBtn.id = 'download-file-btn';
+downloadBtn.type = 'button';
+downloadBtn.textContent = 'Ladda ner';
+downloadBtn.onclick = downloadCurrentFile;
+newBtn.parentNode.insertBefore(downloadBtn, newBtn.nextSibling);
+}
+addDownloadButtonNextToNew();
+
+themeBtn.onclick = () => {
+const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+document.documentElement.setAttribute('data-theme', t);
+themeBtn.textContent = t === 'dark' ? '☀️ Ljust' : '🌙 Mörkt';
+};
+input.addEventListener('input', () => { updatePreview(); saveCurrent(); });
+stylePreset.onchange = updatePreview;
+</script>
+</body>
+</html>

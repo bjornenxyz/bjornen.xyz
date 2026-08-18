@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="sv-SE" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bildoptimering</title>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com/">
+<link rel="preconnect" href="https://cdnjs.com/">
+<style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+		html{font-size:20px;font-weight:100;}
+		
+        body {
+            font-family: system-ui, sans-serif;
+            background: #0f1724;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+			font-weight: 100;
+			font-size: 1rem;
+        }
+        
+		h1,h2,h3,h4,h5,h6,p,div,span,ol,ul {font-weight: 100;}
+        
+		.container {
+            background: #0f1724;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+            position: relative;
+        }
+        
+        .update-notice {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0f1724;
+            color: #fafafa;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: none;
+            z-index: 1000;
+            max-width: 90%;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .update-notice.show {
+            display: flex;
+        }
+        
+        .update-notice-text {
+            flex: 1;
+        }
+        
+        .update-notice-close {
+            background: #0f1724;
+            color: #fafafa;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .update-notice-close:hover {
+            transform: scale(1.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #fafafa;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        
+        .slider-container {
+            margin-bottom: 30px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-weight: 100;
+            color: #fafafa;
+        }
+        
+        .slider-value {
+            color: #fafafa;
+            font-size: 1.2em;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: green;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: green;
+            transform: scale(1.2);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: green;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        
+        input[type="range"]::-moz-range-thumb:hover {
+            background: green;
+            transform: scale(1.2);
+        }
+        
+        .reoptimize-all-btn {
+            display: none;
+            width: 100%;
+            background: #0f1724;
+            color: #fafafa;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 300;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            margin-top: 30px;
+        }
+        
+        .reoptimize-all-btn.show {
+            display: block;
+        }
+        
+        .reoptimize-all-btn:hover {
+            background: #0f1724;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 158, 11, 0.4);
+        }
+        
+        .upload-area {
+            border: 3px dashed green;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #0f1724;
+			color: #fafafa;
+            margin-bottom: 30px;
+        }
+        
+        .upload-area:hover {
+            background: #0f1710;
+			color: #EEE;
+            border-color: #764ba2;
+        }
+        
+        .upload-area.dragover {
+            background: #e0e7ff;
+            border-color: #764ba2;
+            transform: scale(1.02);
+        }
+        
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+        
+        .upload-text {
+            font-size: 1.1em;
+            color: #fafafa;
+            margin-bottom: 10px;
+        }
+        
+        .upload-subtext {
+            font-size: 0.9em;
+            color: #fafafa;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .progress-container {
+            display: none;
+            margin-bottom: 20px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #0f1724;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fafafa;
+            font-weight: 600;
+        }
+        
+        .results-container {
+            display: none;
+        }
+        
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #0f1724;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .result-item:hover {
+            background: #0f1724;
+        }
+        
+        .result-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 200px;
+        }
+        
+        .result-filename {
+            font-weight: 600;
+            color: #fafafa;
+            word-break: break-word;
+        }
+        
+        .result-size {
+            font-size: 0.9em;
+            color: #fafafa;
+        }
+        
+        .size-reduction {
+            color: #fafafa;
+            font-weight: 600;
+        }
+        
+        .result-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+		
+        .download-btn {
+            background: #0f1724;
+            color: #fafafa;
+	        border: 2px solid #667eea;
+			border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: 300;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+		
+        .download-btn:hover {
+            background: #0f1724;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+		
+		.delete-btn {
+            background: #0f1724;
+            color: #fafafa;
+			padding: 10px 20px;
+            cursor: pointer;
+            font-weight: 300;
+			border: none;
+		}
+		
+		.delete-btn .ikon {
+			color: red;
+		}
+		
+		.delete-btn .ikon:hover {
+			color: green;
+		}
+        
+        .reset-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .reset-btn {
+            background: transparent;
+            color: #fafafa;
+            border: 2px solid #ef4444;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 300;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .reset-btn:hover {
+            background: #ef4444;
+			color: #FFF;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+        }
+        
+        .reset-btn.confirming {
+            flex: 1;
+        }
+        
+        .confirm-btn {
+            background: #0f1724;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            flex: 1;
+            display: none;
+        }
+        
+        .confirm-btn.show {
+            display: block;
+        }
+        
+        .confirm-btn:hover {
+            background: #0f1724;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+        
+        .cancel-btn {
+            background: #0f1724;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            flex: 1;
+            display: none;
+        }
+        
+        .cancel-btn.show {
+            display: block;
+        }
+        
+        .cancel-btn:hover {
+            background: #0f1724;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(107, 114, 128, 0.4);
+        }
+        
+        .batch-download {
+            margin-top: 0;
+            padding: 20px;
+            background: #0f1724;
+            border-radius: 10px;
+        }
+        
+        .batch-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .batch-title {
+            font-weight: 600;
+            color: #fafafa;
+            flex-shrink: 0;
+        }
+        
+        .batch-download-btn {
+            background: #0f1724;
+            color: #fafafa;
+            border: 2px solid #fafafa;
+            padding: 12px 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        .batch-download-btn:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+        
+        .batch-download-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+            }
+            
+            .upload-area {
+                padding: 40px 15px;
+            }
+            
+            .result-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .result-actions {
+                width: 100%;
+            }
+            
+            .download-btn {
+                flex: 1;
+            }
+            
+			.batch-title {
+				display: none;
+			}
+			
+            .batch-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .batch-download-btn {
+                width: 100%;
+            }
+            
+            .reset-container {
+				padding: 20px;
+                flex-direction: column;
+            }
+            
+            .reset-btn.confirming {
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.3em;
+                margin-bottom: 20px;
+            }
+            
+            .update-notice {
+                font-size: 0.9em;
+                padding: 12px 20px;
+            }
+        }
+		
+		.total-stats{margin:1rem 0; font-size: 0.8rem;}
+		.total-stats .hundra{display:inline-block;font-size:1.5rem;margin-right:0.5rem;padding:0.5rem;}
+    </style>
+</head>
+<body>
+    <!-- notis -->
+    <div class="update-notice" id="updateNotice">
+        <div class="update-notice-text" id="updateNoticeText"></div>
+        <button class="update-notice-close" onclick="dismissUpdateNotice()">×</button>
+    </div>
+
+    <div class="container">
+        <h1>💣 PNG, JPG/JPEG + WebP optimering</h1>
+        
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>Procentuell Optimeringsnivå</span>
+                <span class="slider-value" id="sliderValue">50%</span>
+            </div>
+            <input type="range" id="qualitySlider" min="1" max="100" value="50">
+<button class="reoptimize-all-btn" id="reoptimizeAllBtn" onclick="reoptimizeAllImages()">🪄 Optimera Igen</button>
+        </div>
+        
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">🪓</div>
+            <div class="upload-text">Välj bild(er)</div>
+            <div class="upload-subtext"><em><strong>eller:</strong></em> dra och släpp bild(er) hit</div>
+        </div>
+        
+        <input type="file" id="fileInput" multiple accept="image/png,image/jpeg,image/jpg,image/webp">
+        
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+        </div>
+        
+        <div class="results-container" id="resultsContainer">
+            <div id="resultsList"></div>
+            
+            <div class="reset-container">
+                <button class="reset-btn" id="resetBtn" onclick="showResetConfirmation()">🔥 Rensa &amp; Starta Om</button>
+                <button class="confirm-btn" id="confirmResetBtn" onclick="confirmReset()">✅ Ja, rensa</button>
+                <button class="cancel-btn" id="cancelResetBtn" onclick="cancelReset()">❌ Avbryt</button>
+            </div>
+            
+            <div class="batch-download">
+                <div class="batch-controls">
+                    <div class="batch-title">Spara</div>
+                    <button class="batch-download-btn" id="batchDownloadBtn">🔬 Spara ZIP</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>		
+        // bibliotek att hålla koll på (version)
+        const LIBRARY_VERSIONS = {
+            'jszip': {
+                url: 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+                version: '3.10.1',
+                checkUrl: 'https://api.cdnjs.com/libraries/jszip'
+            },
+            'filesaver': {
+                url: 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js',
+                version: '2.0.5',
+                checkUrl: 'https://api.cdnjs.com/libraries/FileSaver.js'
+            },
+            'pako': {
+                url: 'https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js',
+                version: '2.1.0',
+                checkUrl: 'https://api.cdnjs.com/libraries/pako'
+            }
+        };
+        
+        // globala variablar
+        let optimizedImages = [];
+        let qualityValue = 50;
+        let initialQualityValue = 50;
+        let db;
+        
+        // DOM element
+        const slider = document.getElementById('qualitySlider');
+        const sliderValue = document.getElementById('sliderValue');
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const resultsList = document.getElementById('resultsList');
+        const batchDownloadBtn = document.getElementById('batchDownloadBtn');
+        const reoptimizeAllBtn = document.getElementById('reoptimizeAllBtn');
+		const DB_NAME = 'BildOptDB';
+		const DB_VERSION = 2;
+		
+		// funktioner för ZIP-arkivens namn
+		function getNextZipName(base = 'optimerade_bilder.zip') {
+		    const stored = localStorage.getItem('zipCounter');
+		    const count = stored ? Number(stored) + 1 : 1;
+		    localStorage.setItem('zipCounter', count);
+		    return base.replace('.zip', `_${count}.zip`);
+		}
+
+		function buildOptimizedFileName(originalName, quality) {
+		    const dot = originalName.lastIndexOf('.');
+		    const base = originalName.substring(0, dot);
+		    const ext = originalName.substring(dot);
+		    return `optimerad_${quality}_${base}${ext}`;
+		}
+        
+        // dra igång så vi kommer nånvart... IndexedDB!
+        function initIndexedDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('BildOptDB', 2);
+                
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    db = request.result;
+                    resolve(db);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    
+                    if (!db.objectStoreNames.contains('libraries')) {
+                        db.createObjectStore('libraries', { keyPath: 'name' });
+                    }
+                    
+                    if (!db.objectStoreNames.contains('settings')) {
+                        db.createObjectStore('settings', { keyPath: 'key' });
+                    }
+					
+				    if (!db.objectStoreNames.contains('pages')) {
+				        db.createObjectStore('pages', { keyPath: 'path' });
+				    }
+                };
+            });
+        }
+        
+		async function ensurePersistentStorage() {
+		    if (navigator.storage && navigator.storage.persisted) {
+		        const alreadyPersisted = await navigator.storage.persisted();
+		        if (alreadyPersisted) {
+		            console.log(`✅ IDB-lagring aktiverad.`);
+		            return true;
+		        }
+		    }
+
+		    if (navigator.storage && navigator.storage.persist) {
+		        const granted = await navigator.storage.persist();
+		        if (granted) {
+		            console.log(`✅ IDB-lagring beviljad. Sidan körs nu offline.`);
+		        } else {
+		            console.warn(`⚠️ IDB-lagring nekades.`);
+		        }
+		        return granted;
+		    }
+
+		    console.warn(`⚠️ Webbläsaren saknar nödvändligt API.`);
+		    return false;
+		}
+		
+		function storePage(path, html) {
+	       return new Promise((resolve, reject) => {
+	           const tx = db.transaction(['pages'], 'readwrite');
+	           const store = tx.objectStore('pages');
+	           store.put({ path, html, savedAt: Date.now() });
+	           tx.oncomplete = () => resolve();
+	           tx.onerror = () => reject(tx.error);
+	       });
+	   }
+	   
+	   function getStoredPage(path) {
+	       return new Promise((resolve, reject) => {
+	           const tx = db.transaction(['pages'], 'readonly');
+	           const store = tx.objectStore('pages');
+	           const req = store.get(path);
+	           req.onsuccess = () => resolve(req.result ? req.result.html : null);
+	           req.onerror = () => reject(req.error);
+	       });
+	   }
+	   
+	   (async () => {
+	       if (!navigator.onLine) {
+	           const cached = await getStoredPage('/bilder.html');
+	           if (cached) {
+	               document.open();
+	               document.write(cached);
+	               document.close();
+	               console.log(`Webbsidan körs lokalt från IDB.`);
+	               return;
+	           }
+	           console.warn(`Webbplatsen ej cachad.`);
+	           return;
+	       }
+
+	   })();
+
+        // ladda bibliotek från CDN och cache
+        async function loadLibrary(name, url, currentVersion) {
+            try {
+                const transaction = db.transaction(['libraries'], 'readonly');
+                const store = transaction.objectStore('libraries');
+                const request = store.get(name);
+                
+                return new Promise((resolve, reject) => {
+                    request.onsuccess = () => {
+                        if (request.result && request.result.code && request.result.version === currentVersion) {
+                            // ladda från cache
+                            const script = document.createElement('script');
+                            script.textContent = request.result.code;
+                            document.head.appendChild(script);
+                            console.log(`Använder cachad v${currentVersion} av ${name} från IDB.`);
+                            resolve();
+                        } else {
+                            // ladda från CDN och cache
+                            fetch(url)
+                                .then(response => response.text())
+                                .then(code => {
+                                    // cacha koden
+                                    const transaction = db.transaction(['libraries'], 'readwrite');
+                                    const store = transaction.objectStore('libraries');
+                                    store.put({
+                                        name: name,
+                                        code: code,
+                                        url: url,
+                                        version: currentVersion,
+                                        cachedAt: Date.now()
+                                    });
+                                    
+                                    // kör motorn tills det tar slut
+                                    const script = document.createElement('script');
+                                    script.textContent = code;
+                                    document.head.appendChild(script);
+                                    console.log(`Använder cachad v${currentVersion} av ${name} från IDB.`);
+                                    resolve();
+                                })
+                                .catch(reject);
+                        }
+                    };
+                    
+                    request.onerror = () => {
+                        // fallback till CDN
+                        const script = document.createElement('script');
+                        script.src = url;
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    };
+                });
+            } catch (error) {
+                // fallback till vanligt script lösning
+                return new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = url;
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+            }
+        }
+        
+        // bibliotek - finns det nya versioner? KOLLA
+        async function checkForUpdates() {
+            if (!db) return;
+            
+            const transaction = db.transaction(['settings'], 'readonly');
+            const store = transaction.objectStore('settings');
+            const request = store.get('lastUpdateCheck');
+            
+            return new Promise((resolve) => {
+                request.onsuccess = async () => {
+                    const lastCheck = request.result ? request.result.value : 0;
+                    const oneWeek = 7 * 24 * 60 * 60 * 1000;
+                    
+                    if (Date.now() - lastCheck > oneWeek) {
+                        const updates = [];
+                        
+                        for (const [name, lib] of Object.entries(LIBRARY_VERSIONS)) {
+                            try {
+                                const response = await fetch(lib.checkUrl);
+                                const data = await response.json();
+                                const latestVersion = data.version;
+                                
+                                if (latestVersion && latestVersion !== lib.version) {
+                                    updates.push({ name, current: lib.version, latest: latestVersion });
+                                    
+                                    // hämta och cacha ny version automatiskt
+                                    const newUrl = lib.url.replace(lib.version, latestVersion);
+                                    try {
+                                        const codeResponse = await fetch(newUrl);
+                                        const code = await codeResponse.text();
+                                        
+                                        const updateTransaction = db.transaction(['libraries'], 'readwrite');
+                                        const updateStore = updateTransaction.objectStore('libraries');
+                                        updateStore.put({
+                                            name: name,
+                                            code: code,
+                                            url: newUrl,
+                                            version: latestVersion,
+                                            cachedAt: Date.now()
+                                        });
+                                        
+                                        console.log(`Hämtat och cachat v${latestVersion} av ${name}.`);
+                                        
+                                        // uppdatera LIBRARY_VERSIONS
+                                        LIBRARY_VERSIONS[name].version = latestVersion;
+                                        LIBRARY_VERSIONS[name].url = newUrl;
+                                    } catch (error) {
+                               console.error(`Hämtning av ${name} v${latestVersion} misslyckades: `, error);
+                                    }
+                                }
+                            } catch (error) {
+                                console.error(`Versionskontrollen av ${name} gick fel: `, error);
+                            }
+                        }
+                        
+                        const updateTransaction = db.transaction(['settings'], 'readwrite');
+                        const updateStore = updateTransaction.objectStore('settings');
+                        updateStore.put({ key: 'lastUpdateCheck', value: Date.now() });
+                        
+                        if (updates.length > 0) {
+                            showUpdateNotice(updates);
+                        }
+                    }
+                    
+                    resolve();
+                };
+                
+                request.onerror = () => resolve();
+            });
+        }
+        
+		function showUpdateNotice(updates) {
+		    const transaction = db.transaction(['settings'], 'readonly');
+		    const store = transaction.objectStore('settings');
+		    const request = store.get('updateNoticeDismissed');
+		    request.onsuccess = () => {
+		        const dismissed = request.result ? request.result.value : false;
+		        if (dismissed) return;
+		        const notice = document.getElementById('updateNotice');
+		        const text = document.getElementById('updateNoticeText');
+		        let message = '';
+		        if (updates.length === 1) {
+		            const u = updates[0];
+		            const libInfo = `${u.name}: ${u.current} → ${u.latest}`;
+		            message = `🔔 Ny version av ${libInfo} hämtad och cachad. IDB uppdaterad.`;
+		        }
+		        else {
+		            const lines = updates.map(u => `${u.name}: ${u.current} → ${u.latest}`);
+		            message = [
+		                '🔔 Nya versioner av:',
+		                ...lines,
+		                'hämtade och cachade. IDB uppdaterad.'
+		            ].join('<br>');
+		        }
+		        text.innerHTML = message;
+		        notice.classList.add('show');
+		    };
+		}
+        
+        function dismissUpdateNotice() {
+            const notice = document.getElementById('updateNotice');
+            notice.classList.remove('show');
+            
+            const transaction = db.transaction(['settings'], 'readwrite');
+            const store = transaction.objectStore('settings');
+            store.put({ key: 'updateNoticeDismissed', value: true });
+            
+            setTimeout(() => {
+                const transaction = db.transaction(['settings'], 'readwrite');
+                const store = transaction.objectStore('settings');
+                store.delete('updateNoticeDismissed');
+            }, 7 * 24 * 60 * 60 * 1000);
+        }
+        
+        // starta hjärtat
+        async function init() {
+            try {
+				await ensurePersistentStorage();
+                await initIndexedDB();
+                
+        // ladda alla bibliotek från CDN eller cache
+        await loadLibrary('jszip', LIBRARY_VERSIONS['jszip'].url, LIBRARY_VERSIONS['jszip'].version);
+        await loadLibrary('filesaver', LIBRARY_VERSIONS['filesaver'].url, LIBRARY_VERSIONS['filesaver'].version);
+        await loadLibrary('pako', LIBRARY_VERSIONS['pako'].url, LIBRARY_VERSIONS['pako'].version);
+
+        // spara HTML‑filen i IDB
+        const currentHtml = document.documentElement.outerHTML;
+        await storePage('/bilder.html', currentHtml);
+        console.log(`Filerna cachade: söker efter uppdateringar...`);
+		
+       // kontrollera om uppdateringar för biblioteken mm finns
+       await checkForUpdates();
+
+       console.log(`Inga uppdateringar tillgängliga. Motorn för bildoptimering fungerar - kör så det ryker!`);
+       
+	        } catch (error) {
+       
+	            console.error(`Motor problem med följande fel: `, error);
+            }
+        }
+ 
+        // återställ GUI
+        function showResetConfirmation() {
+            const resetBtn = document.getElementById('resetBtn');
+            const confirmBtn = document.getElementById('confirmResetBtn');
+            const cancelBtn = document.getElementById('cancelResetBtn');
+            
+            resetBtn.classList.add('confirming');
+            confirmBtn.classList.add('show');
+            cancelBtn.classList.add('show');
+        }
+        
+        function confirmReset() {
+            optimizedImages = [];
+            resultsList.innerHTML = '';
+            resultsContainer.style.display = 'none';
+            fileInput.value = '';
+            slider.value = 50;
+            qualityValue = 50;
+            initialQualityValue = 50;
+            sliderValue.textContent = '50%';
+            reoptimizeAllBtn.classList.remove('show');
+            
+            const resetBtn = document.getElementById('resetBtn');
+            const confirmBtn = document.getElementById('confirmResetBtn');
+            const cancelBtn = document.getElementById('cancelResetBtn');
+            
+            resetBtn.classList.remove('confirming');
+            confirmBtn.classList.remove('show');
+            cancelBtn.classList.remove('show');
+			localStorage.removeItem('zipCounter');
+        }
+        
+        function cancelReset() {
+            const resetBtn = document.getElementById('resetBtn');
+            const confirmBtn = document.getElementById('confirmResetBtn');
+            const cancelBtn = document.getElementById('cancelResetBtn');
+            
+            resetBtn.classList.remove('confirming');
+            confirmBtn.classList.remove('show');
+            cancelBtn.classList.remove('show');
+        }
+        
+        slider.addEventListener('input', (e) => {
+            qualityValue = parseInt(e.target.value);
+            sliderValue.textContent = qualityValue + '%';
+            
+            if (optimizedImages.length > 0 && qualityValue !== initialQualityValue) {
+                reoptimizeAllBtn.classList.add('show');
+            } else {
+                reoptimizeAllBtn.classList.remove('show');
+            }
+        });
+        
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        
+        async function handleFiles(files) {
+            const imageFiles = Array.from(files).filter(file => 
+                file.type.startsWith('image/') && 
+                ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)
+            );
+            
+            if (imageFiles.length === 0) {
+                uploadArea.style.borderColor = '#ef4444';
+                uploadArea.style.background = '#fee';
+                setTimeout(() => {
+                    uploadArea.style.borderColor = '#667eea';
+                    uploadArea.style.background = '#f8f9ff';
+                }, 2000);
+                return;
+            }
+            
+            optimizedImages = [];
+            resultsList.innerHTML = '';
+            progressContainer.style.display = 'block';
+            resultsContainer.style.display = 'none';
+            initialQualityValue = qualityValue;
+            reoptimizeAllBtn.classList.remove('show');
+            
+            for (let i = 0; i < imageFiles.length; i++) {
+                const file = imageFiles[i];
+                const progress = ((i + 1) / imageFiles.length) * 100;
+                progressFill.style.width = progress + '%';
+                progressFill.textContent = Math.round(progress) + '%';
+                
+                try {
+                    const optimized = await optimizeImage(file);
+                    optimizedImages.push(optimized);
+                } catch (error) {
+					console.error(`Optimeringen av ${file.name} fick följande fel`, error);
+                }
+            }
+            
+            progressContainer.style.display = 'none';
+            displayResults();
+        }
+
+		async function optimizeImage(file, shouldLog = true) {
+		    if (shouldLog) {
+		        console.log(`Optimerar ${file.name} (${file.type}) med ${qualityValue}%`);
+		    }
+		    if (file.type === 'image/png') {
+		        return await optimizePNG(file);
+		    } else if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
+		        return await optimizeJPEG(file);
+		    } else if (file.type === 'image/webp') {
+		        return await optimizeWebP(file);
+		    }
+		}
+		
+		function round2(num) {
+		    return Math.round(num * 100) / 100;
+		}
+		
+		function formatFileSize(bytes) {
+		    if (bytes === 0) return '0 Bytes';
+		    const k = 1024;
+		    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+		    const i = Math.floor(Math.log(bytes) / Math.log(k));
+		    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+		}
+
+		function formatSavedSize(kb) {
+		    const mb = kb / 1024;
+		    const mbStr = (Math.round(mb * 100) / 100).toLocaleString(undefined, {
+		        minimumFractionDigits: 2,
+		        maximumFractionDigits: 2
+		    });
+		    const kbStr = Math.round(kb).toLocaleString();
+		    return `${mbStr}\u00A0MB = ${kbStr}\u00A0KB`;
+		}
+		
+        async function optimizePNG(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = async function(e) {
+                    const img = new Image();
+                    
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        
+                        // hämta bild och data
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const data = imageData.data;
+                        
+                        // färgkorrigering baserat på kvalite
+                        const colorReduction = Math.floor((100 - qualityValue) / 10);
+                        if (colorReduction > 0) {
+                            for (let i = 0; i < data.length; i += 4) {
+                                const factor = Math.pow(2, colorReduction);
+                                data[i] = Math.round(data[i] / factor) * factor;
+                                data[i + 1] = Math.round(data[i + 1] / factor) * factor;
+                                data[i + 2] = Math.round(data[i + 2] / factor) * factor;
+                            }
+                            ctx.putImageData(imageData, 0, 0);
+                        }
+                        
+                        // konvertera till PNG blob
+                        canvas.toBlob(function(blob) {
+                            if (!blob) {
+                                resolve({
+                                    originalFile: file,
+                                    compressedFile: file,
+                                    originalSize: file.size,
+                                    compressedSize: file.size,
+                                    reduction: '0.0',
+                                    optimizedQuality: qualityValue
+                                });
+                                return;
+                            }
+                            
+                            let finalFile = blob;
+                            let finalSize = blob.size;
+                            let reduction = ((file.size - blob.size) / file.size * 100);
+                            
+                            if (blob.size >= file.size) {
+                                finalFile = file;
+                                finalSize = file.size;
+                                reduction = 0;
+                            } else {
+                                finalFile = new File([blob], file.name, { type: 'image/png' });
+                            }
+                            
+console.log(`PNG Result: ${formatFileSize(file.size)} → ${formatFileSize(finalSize)} (${reduction.toFixed(1)}%)`);
+                            
+							resolve({
+							    originalFile: file,
+							    compressedFile: finalFile,
+							    originalSize: file.size,
+							    compressedSize: finalSize,
+							    reduction: round2(reduction),
+							    savedKB: round2((file.size - finalSize) / 1024),
+							    optimizedQuality: qualityValue
+							});
+                        }, 'image/png');
+                    };
+                    
+                    img.onerror = () => reject(new Error('Kunde inte ladda PNG.'));
+                    img.src = e.target.result;
+                };
+                
+                reader.onerror = () => reject(new Error('Kunde inte läsa PNG-bilden.'));
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // optimera jpeg
+        async function optimizeJPEG(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const img = new Image();
+                    
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        
+                        canvas.toBlob(function(blob) {
+                            if (!blob) {
+                                resolve({
+                                    originalFile: file,
+                                    compressedFile: file,
+                                    originalSize: file.size,
+                                    compressedSize: file.size,
+                                    reduction: '0.0',
+                                    optimizedQuality: qualityValue
+                                });
+                                return;
+                            }
+                            
+                            let finalFile = blob;
+                            let finalSize = blob.size;
+                            let reduction = ((file.size - blob.size) / file.size * 100);
+                            
+                            if (blob.size >= file.size) {
+                                finalFile = file;
+                                finalSize = file.size;
+                                reduction = 0;
+                            } else {
+                                finalFile = new File([blob], file.name, { type: 'image/jpeg' });
+                            }
+                            
+console.log(`JPEG Resultat: ${formatFileSize(file.size)} → ${formatFileSize(finalSize)} (${reduction.toFixed(1)}%)`);
+                            
+							resolve({
+							    originalFile: file,
+							    compressedFile: finalFile,
+							    originalSize: file.size,
+							    compressedSize: finalSize,
+							    reduction: round2(reduction),
+							    savedKB: round2((file.size - finalSize) / 1024),
+							    optimizedQuality: qualityValue
+							});
+                        }, 'image/jpeg', qualityValue / 100);
+                    };
+                    
+                    img.onerror = () => reject(new Error('Kunde inte ladda JPEG.'));
+                    img.src = e.target.result;
+                };
+                
+                reader.onerror = () => reject(new Error('Kunde inte läsa JPEG-bilden.'));
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // optimera webp
+        async function optimizeWebP(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const img = new Image();
+                    
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        
+                        canvas.toBlob(function(blob) {
+                            if (!blob) {
+                                resolve({
+                                    originalFile: file,
+                                    compressedFile: file,
+                                    originalSize: file.size,
+                                    compressedSize: file.size,
+                                    reduction: '0.0',
+                                    optimizedQuality: qualityValue
+                                });
+                                return;
+                            }
+                            
+                            let finalFile = blob;
+                            let finalSize = blob.size;
+                            let reduction = ((file.size - blob.size) / file.size * 100);
+                            
+                            if (blob.size >= file.size) {
+                                finalFile = file;
+                                finalSize = file.size;
+                                reduction = 0;
+                            } else {
+                                finalFile = new File([blob], file.name, { type: 'image/webp' });
+                            }
+                            
+console.log(`WebP Resultat: ${formatFileSize(file.size)} → ${formatFileSize(finalSize)} (${reduction.toFixed(1)}%)`);
+                            
+							resolve({
+							    originalFile: file,
+							    compressedFile: finalFile,
+							    originalSize: file.size,
+							    compressedSize: finalSize,
+							    reduction: round2(reduction),
+							    savedKB: round2((file.size - finalSize) / 1024),
+							    optimizedQuality: qualityValue
+							});
+                        }, 'image/webp', qualityValue / 100);
+                    };
+                    
+                    img.onerror = () => reject(new Error('Kunde inte ladda WebP.'));
+                    img.src = e.target.result;
+                };
+                
+                reader.onerror = () => reject(new Error('Kunde inte läsa WebP-bilden.'));
+                reader.readAsDataURL(file);
+            });
+        }
+	
+		function updateTotalStats(isReopt = false) {
+		    const totalFiles = optimizedImages.length;
+		    const totalOriginal = optimizedImages.reduce((s, i) => s + i.originalSize, 0);
+		    const totalCompressed = optimizedImages.reduce((s, i) => s + i.compressedSize, 0);
+		    const totalSavedKB = round2((totalOriginal - totalCompressed) / 1024);
+		    const totalReduction = round2((totalOriginal - totalCompressed) / totalOriginal * 100);
+
+		    let statsEl = document.getElementById('totalStats');
+		    if (!statsEl) {
+		        statsEl = document.createElement('div');
+		        statsEl.id = 'totalStats';
+		        statsEl.style.marginTop = '10px';
+		        statsEl.style.fontSize = '0.95rem';
+		        statsEl.style.color = '#fafafa';
+		        document.querySelector('.batch-download').appendChild(statsEl);
+		    }
+			
+			if (isReopt) {
+			    // meddelande då samma bild(er) optimeras igen
+			    const fileText = totalFiles === 1 ? "bild" : "bilder";
+			    statsEl.innerHTML = `<p class="total-stats"><span class="hundra">💯</span> 
+				<strong>${totalFiles}</strong> ${fileText}</p>`;
+
+			    // andra och tredje paragrafen
+			    statsEl.innerHTML += `<p>Med kvaliten ändrad till ${qualityValue}% har ${formatFileSize(totalOriginal)} 
+				minskat till ${formatFileSize(totalCompressed)} (${totalReduction}%).</p>`;
+				statsEl.innerHTML += `<p>Du sparar nu totalt ${totalSavedKB} KB! 
+				<strong>Glöm inte lazy‑loading i din kod.</strong></p>`;
+			
+			} else {
+			    // meddelande efter första optimeringen
+			    const fileText = totalFiles === 1 ? "bild optimerad" : "bilder optimerade";
+			    statsEl.innerHTML = `<p class="total-stats"><span class="hundra">💯</span> 
+				<strong>${totalFiles}</strong> ${fileText}</p>`;
+				
+				statsEl.innerHTML += `<p>Från ${formatFileSize(totalOriginal)} till ${formatFileSize(totalCompressed)} 
+				är en minskning med ${totalReduction}%</p>`;
+				
+				// andra paragrafen
+				statsEl.innerHTML += `<p>Du sparar ${totalSavedKB} KB. 
+				<strong>Glöm inte lazy‑loading i din kod.</strong></p>`;
+			}
+		}
+		
+		async function reoptimizeAllImages() {
+		    progressContainer.style.display = 'block';
+		    console.log(`
+Samma bilder optimeras igen med ${qualityValue}%
+
+`);
+		    for (let i = 0; i < optimizedImages.length; i++) {
+		        const img = optimizedImages[i];
+		        const progress = ((i + 1) / optimizedImages.length) * 100;
+		        progressFill.style.width = progress + '%';
+		        progressFill.textContent = Math.round(progress) + '%';
+		        try {
+		            const optimized = await optimizeImage(img.originalFile, false);
+		            console.log(`Optimerar ${img.originalFile.name} (${img.originalFile.type}) igen med ${qualityValue}%`);
+		            optimizedImages[i] = optimized;
+		        } catch (error) {
+		            console.error(`Följande fel inträffade vid ny optimering: `, error);
+		        }
+		    }
+		    progressContainer.style.display = 'none';
+		    initialQualityValue = qualityValue;
+		    reoptimizeAllBtn.classList.remove('show');
+		    displayResults();
+		    updateTotalStats(true);
+		}
+				
+		function removeImage(imgObj, rowEl) {
+		    const idx = optimizedImages.indexOf(imgObj);
+		    if (idx > -1) {
+		        optimizedImages.splice(idx, 1);
+		    }
+
+		    if (rowEl && rowEl.parentNode) {
+		        rowEl.parentNode.removeChild(rowEl);
+		    }
+
+		    updateTotalStats();
+		}
+		
+        function displayResults() {
+            resultsContainer.style.display = 'block';
+            resultsList.innerHTML = '';
+            
+            optimizedImages.forEach((img, index) => {
+                const item = document.createElement('div');
+                item.className = 'result-item';
+                
+                const info = document.createElement('div');
+                info.className = 'result-info';
+                
+                const filename = document.createElement('div');
+                filename.className = 'result-filename';
+                filename.textContent = img.originalFile.name;
+                
+                const sizeInfo = document.createElement('div');
+                sizeInfo.className = 'result-size';
+			sizeInfo.innerHTML = `${formatFileSize(img.originalSize)} → ${formatFileSize(img.compressedSize)}
+			    <span class="size-reduction"> = ${img.reduction}% = ${formatSavedSize(img.savedKB)}</span>`;
+                
+                info.appendChild(filename);
+                info.appendChild(sizeInfo);
+                
+                const actions = document.createElement('div');
+                actions.className = 'result-actions';
+                
+                const downloadBtn = document.createElement('button');
+                downloadBtn.className = 'download-btn';
+                downloadBtn.textContent = 'Spara';
+                downloadBtn.onclick = () => downloadSingleImage(img);
+                actions.appendChild(downloadBtn);
+				
+		        const deleteBtn = document.createElement('button');
+		        deleteBtn.className = 'delete-btn';
+		        deleteBtn.textContent = '🗑️';
+		        deleteBtn.onclick = () => removeImage(img, item);
+		        actions.appendChild(deleteBtn);
+                
+                item.appendChild(info);
+                item.appendChild(actions);
+                resultsList.appendChild(item);
+            });
+			
+			updateTotalStats();
+        }
+		
+		function downloadSingleImage(img) {
+		    const name = buildOptimizedFileName(img.originalFile.name, img.optimizedQuality);
+		    const url = URL.createObjectURL(img.compressedFile);
+		    const a = document.createElement('a');
+		    a.href = url;
+		    a.download = name;
+		    document.body.appendChild(a);
+		    a.click();
+		    document.body.removeChild(a);
+		    URL.revokeObjectURL(url);
+		}
+        
+        batchDownloadBtn.addEventListener('click', async () => {
+            if (optimizedImages.length === 0) return;
+            
+            batchDownloadBtn.disabled = true;
+            batchDownloadBtn.textContent = '⏳ Skapar ZIP-fil...';
+            
+            try {
+                await downloadAsZip();
+            } catch (error) {
+                console.error(`ZIP-filen ej skapad: `, error);
+                batchDownloadBtn.textContent = '❌ Fel uppstod';
+                batchDownloadBtn.style.background = '#ef4444';
+                setTimeout(() => {
+                    batchDownloadBtn.textContent = '🔬 Spara ZIP';
+                    batchDownloadBtn.style.background = '#10b981';
+                }, 3000);
+            }
+            
+            batchDownloadBtn.disabled = false;
+            batchDownloadBtn.textContent = '🔬 Spara ZIP';
+        });
+        
+		async function downloadAsZip() {
+		    const zip = new JSZip();
+		    for (const img of optimizedImages) {
+		        zip.file('optimerad_' + img.originalFile.name, img.compressedFile);
+		    }
+		    const content = await zip.generateAsync({type: 'blob'});
+		    const zipName = getNextZipName();
+		    saveAs(content, zipName);
+		}
+        init();
+    </script>
+</body>
+</html>
