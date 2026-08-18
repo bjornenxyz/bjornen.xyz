@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Escape HTML/JS</title>
+<style>
+  :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;padding:0;margin:0}
+  *,*::before,*::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      } body{display:flex;min-height:100vh;align-items:flex-start;justify-content:center;background:#f6f7fb;color:#0b1220;padding:20px;box-sizing:border-box}
+  .container{width:100%;max-width:900px;background:#fff;border-radius:10px;padding:16px;box-shadow:0 6px 18px rgba(8,20,40,0.06)}
+  h1{font-size:18px;margin:0 0 12px}
+  label{display:block;font-size:13px;margin:10px 0 6px}
+  textarea{width:100%;min-height:160px;resize:vertical;padding:10px;border:1px solid #e1e6ef;border-radius:6px;font-family:Menlo,monospace;font-size:13px;line-height:1.45;background:#fbfdff;color:#051025;box-sizing:border-box}
+  .output{min-height:160px;padding:10px;border:1px dashed #cbd7ee;border-radius:6px;background:#fafcff;white-space:pre-wrap;word-break:break-word;font-family:Menlo,monospace;font-size:13px;line-height:1.45;position:relative;overflow:auto}
+  .controls{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;justify-content:flex-end}
+  .controls-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  button{background:#2563eb;color:white;border:0;padding:8px 12px;border-radius:6px;font-size:13px;cursor:pointer}
+  button.secondary{background:#eef4ff;color:#0b1220;border:1px solid #d7e4ff}
+  .note{font-size:12px;color:#586a88;margin-top:10px}
+  @media (max-width:920px){
+    .container{padding:14px}
+  }
+  @media (max-width:520px){
+    h1{font-size:16px}
+    textarea,.output{min-height:140px}
+    .controls{flex-direction:column;align-items:stretch;justify-content:flex-start}
+    .controls-row{justify-content:stretch}
+    button{width:100%}
+  }
+  /* focus styles for accessibility */
+  textarea:focus, button:focus {outline:3px solid rgba(37,99,235,0.18);outline-offset:2px}
+</style>
+</head>
+<body>
+  <div class="container" role="main">
+    <h1>Konvertera HTML/JS till visade entiteter</h1>
+
+    <label for="input">Klistra in HTML / JS här:</label>
+    <textarea id="input" placeholder="<script>js kod</script>" aria-label="Inmatningsfält"></textarea>
+
+    <label for="output" style="margin-top:12px;">Resultat (visas automatiskt efter 2s):</label>
+    <div id="output" class="output" tabindex="0" aria-label="Resultatfält" role="textbox"></div>
+
+    <div class="controls" style="margin-top:8px;">
+      <div class="controls-row" style="width:100%;max-width:420px;">
+        <button id="copyBtn">Kopiera</button>
+        <button id="clearBtn" class="secondary">Rensa</button>
+      </div>
+    </div>
+
+    <p class="note">Resultatet markeras automatiskt när det uppdateras — tryck Ctrl/Cmd + C för att kopiera.</p>
+  </div>
+
+<script>
+(function(){
+  const input = document.getElementById('input');
+  const output = document.getElementById('output');
+  const copyBtn = document.getElementById('copyBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  let timer = null;
+  const DELAY = 2000;
+
+  function escapeHtml(str) {
+    if (str == null) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\//g, '&#47;');
+  }
+
+  function updateOutputNow() {
+    const raw = input.value;
+    const escaped = escapeHtml(raw);
+    output.textContent = escaped;
+    selectOutput();
+  }
+
+  function scheduleUpdate() {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      updateOutputNow();
+      timer = null;
+    }, DELAY);
+  }
+
+  function selectOutput() {
+    const range = document.createRange();
+    range.selectNodeContents(output);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    output.focus();
+  }
+
+  input.addEventListener('input', scheduleUpdate);
+  input.addEventListener('paste', scheduleUpdate);
+
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(output.textContent || '');
+      copyBtn.textContent = 'Kopierat';
+      setTimeout(() => copyBtn.textContent = 'Kopiera', 1200);
+    } catch (e) {
+      selectOutput();
+      document.execCommand('copy');
+      copyBtn.textContent = 'Kopierat';
+      setTimeout(() => copyBtn.textContent = 'Kopiera', 1200);
+    }
+  });
+
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    output.textContent = '';
+    input.focus();
+  });
+
+  output.textContent = '';
+  output.addEventListener('click', selectOutput);
+
+  if (input.value.trim() !== '') scheduleUpdate();
+})();
+</script>
+</body>
+</html>
