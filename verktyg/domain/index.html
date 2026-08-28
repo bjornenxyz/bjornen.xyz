@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hosting Webbplats</title>
+<style>
+:root {
+--bg: #ffffff;
+--text: #1a1a1a;
+--primary: #2563eb;
+--secondary: #f3f4f6;
+--accent: #3b82f6;
+--card-bg: #ffffff;
+--border: #e5e7eb;
+--success: #22c55e;
+--news-bg: #f9fafb;
+--testi-bg: #eff6ff;
+--theme-toggle-text: #fafafa;
+}
+[data-theme="dark"] {
+--bg: #0f172a;
+--text: #f8fafc;
+--primary: #3b82f6;
+--secondary: #1e293b;
+--accent: #60a5fa;
+--card-bg: #1e293b;
+--border: #334155;
+--news-bg: #1e293b;
+--testi-bg: #0f172a;
+--theme-toggle-text: #fafafa;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; transition: background 0.3s, color 0.3s; }
+body { font-family: system-ui, Verdana, sans-serif; background-color: var(--bg); color: var(--text); line-height: 1.6; display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
+
+header { position: sticky; top: 0; z-index: 1000; background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 1rem; }
+nav { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+.logo { font-weight: bold; font-size: 1.5rem; color: var(--primary); }
+
+.nav-wrapper { display: flex; align-items: center; gap: 1rem; }
+.nav-links { display: flex; gap: 1.5rem; list-style: none; }
+.nav-links a { text-decoration: none; color: var(--text); font-weight: 500; }
+.nav-links a:hover { color: var(--primary); }
+
+.hamburger { font-size: 1.5rem; cursor: pointer; padding: 5px 12px; border-radius: 8px; display: none; color: var(--text); user-select: none; }
+.hamburger.active { background: var(--primary); color: white; }
+#menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 998; }
+
+section { padding: 4rem 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+.hero { text-align: center; padding-top: 5rem; }
+.sla-badge { display: inline-block; background: rgba(34, 197, 94, 0.1); color: var(--success); padding: 5px 15px; border-radius: 25px; font-weight: bold; margin-bottom: 1rem; }
+
+.search-container { background: var(--card-bg); padding: 2rem; border-radius: 4px; border: 1px solid var(--border); margin-top: 2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+.search-box { display: flex; gap: 0.5rem; }
+.input-field { flex: 1; padding: 1rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; }
+.btn-primary { background: var(--primary); color: #fafafa; border: 2px solid transparent; padding: 1rem 2rem; border-radius: 4px; cursor: pointer; font-weight: bold; }
+.btn-primary:hover {background: var(--secondary); color: var(--primary); border: 2px solid var(--primary);}
+.search-hints { margin-top: 1rem; font-size: 0.8rem; opacity: 0.7; }
+
+.pricing { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 3rem; }
+.card { background: var(--card-bg); padding: 2rem; border-radius: 4px; border: 1px solid var(--border); text-align: center; position: relative; }
+.card.popular { border: 2px solid var(--primary); transform: scale(1.05); z-index: 2; }
+.popular-badge { background: var(--primary); color: #fafafa; padding: 4px 12px; border-radius: 4px; font-size: 0.7rem; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); }
+.price { font-size: 2.5rem; font-weight: bold; margin: 1rem 0; }
+.price span { font-size: 1rem; opacity: 0.7; }
+.btn-full { margin-top: 1.5rem; width: 100%; }
+
+.news-section { background: var(--news-bg); border-radius: 4px; margin-top: 2rem; }
+.news-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-top: 2rem; }
+.news-item { border-left: 4px solid var(--primary); padding-left: 1.5rem; }
+.news-date { font-size: 0.85rem; color: var(--primary); font-weight: bold; }
+.news-title { margin: 0.5rem 0; font-size: 1.2rem; }
+
+.review-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
+.review-card { padding: 2rem; background: var(--testi-bg); border-radius: 4px; font-style: italic; position: relative; }
+.review-card::before { content: '"'; font-size: 4rem; position: absolute; top: -10px; left: 10px; opacity: 0.1; }
+.author { display: block; margin-top: 1rem; font-weight: bold; font-style: normal; color: var(--primary); }
+
+@media (max-width: 768px) {
+body { padding-bottom: 70px; }
+header { position: fixed; top: auto; bottom: 0; width: 100%; border-top: 2px solid var(--border); border-bottom: none; }
+.hamburger { display: block; }
+.nav-links {
+position: fixed; bottom: 90px; left: -100%; width: 100%; 
+background: var(--card-bg); flex-direction: column; padding: 2rem;
+border: 2px 0 2px 0 solid var(--border); z-index: 999;
+box-shadow: 0 -5px 20px rgba(0,0,0,0.1); transition: 1s ease;
+}
+.nav-links.open { left: 0%; }
+.search-box { flex-direction: column; }
+.hero h1 { font-size: 2rem; }
+}
+
+#theme-toggle { cursor: pointer; background: var(--primary); border: none; padding: 0.6rem 1rem; border-radius: 4px; color: var(--theme-toggle-text); }
+footer { padding: 3rem 1rem; text-align: center; opacity: 0.7; font-size: 0.9rem; background: var(--secondary); margin-top: 2rem; }
+.section-title { text-align: center; margin-bottom: 1rem; }
+
+#search-result {display:none;}
+.result-container {
+margin-top: 25px;
+background: rgba(255, 255, 255, 0.05);
+border-radius: 12px;
+padding: 10px;
+backdrop-filter: blur(10px);
+border: 1px solid rgba(255, 255, 255, 0.1);
+animation: fadeIn 0.3s ease-out;
+}
+
+.result-table {
+width: 100%;
+border-collapse: separate;
+border-spacing: 0 8px;
+color: #fff;
+}
+
+.result-table th {
+text-align: left;
+padding: 12px 15px;
+font-size: 0.85rem;
+text-transform: uppercase;
+letter-spacing: 1px;
+color: #aaa;
+}
+
+.result-table tr {
+background: rgba(255, 255, 255, 0.03);
+transition: transform 0.2s;
+}
+
+.result-table td {
+padding: 15px;
+border-top: 1px solid rgba(255, 255, 255, 0.05);
+border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.status-free { color: #00ff88; font-weight: 600; }
+.status-taken { color: #ff4d4d; opacity: 0.8; }
+
+.buy-btn {
+background: #007bff;
+color: white;
+border: none;
+padding: 6px 15px;
+border-radius: 6px;
+cursor: pointer;
+font-size: 0.9rem;
+}
+
+@keyframes fadeIn {
+from { opacity: 0; transform: translateY(10px); }
+to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<div id="menu-overlay"></div>
+
+<header>
+<nav>
+<div class="logo">snabb.host</div>
+<div class="nav-wrapper">
+<ul class="nav-links" id="menu-links">
+<li><a href="#hosting">Webbhotell</a></li>
+<li><a href="#domains">Domäner</a></li>
+<li><a href="#news">Nyheter</a></li>
+<li><a href="#reviews">Omdömen</a></li>
+</ul>
+<button id="theme-toggle" onclick="toggleTheme()">🌙 Mörkt</button>
+<div class="hamburger" id="hamburger-btn" onclick="toggleMenu()">&#9776;</div>
+</div>
+</nav>
+</header>
+
+<section class="hero" id="domains">
+<div class="sla-badge">✓ 99.99% Uptime SLA Garanti</div>
+<h1>Domäner & Webbhotell i världsklass</h1>
+<p>Säkra din digitala närvaro med branschens snabbaste NVMe-hosting.</p>
+<div class="search-container">
+<div class="search-box">
+<input type="text" id="domainInput" class="input-field" placeholder="Sök lediga domäner här...">
+<button id="searchBtn" class="btn-primary">Sök domän</button>
+</div>
+<p class="search-hints">Populära: .se (99kr) .com (129kr) .io (499kr)</p>
+<div id="search-result" class="result-container">
+<table class="result-table">
+<thead><tr><th>Domännamn</th><th>Status</th><th>Åtgärd</th></tr></thead><tbody id="tableBody"></tbody></table></div></div>
+</section>
+
+<section id="hosting">
+<h2 class="section-title">Välj rätt paket för dig</h2>
+<div class="pricing">
+<div class="card">
+<h3>Start</h3>
+<div class="price">29<span>kr/mån</span></div>
+<p>1 Webbplats<br>10 GB Lagring<br>Fri SSL</p>
+<button class="btn-primary btn-full">Köp nu</button>
+</div>
+<div class="card popular">
+<span class="popular-badge">POPULÄR</span>
+<h3>Premium</h3>
+<div class="price">89<span>kr/mån</span></div>
+<p>10 Webbplatser<br>100 GB NVMe<br>Gratis Domän 1 år</p>
+<button class="btn-primary btn-full">Köp nu</button>
+</div>
+<div class="card">
+<h3>Business</h3>
+<div class="price">199<span>kr/mån</span></div>
+<p>Obegränsat<br>500 GB NVMe<br>Daglig Backup</p>
+<button class="btn-primary btn-full">Köp nu</button>
+</div>
+</div>
+</section>
+
+<section id="news" class="news-section">
+<h2>Senaste Nyheterna</h2>
+
+<p>Vi lanserar vår fjärde serverhall för ännu lägre latens och bättre redundans i hela Norden. Vi lanserar vår fjärde serverhall för ännu lägre latens och bättre redundans i hela Norden. Vi lanserar vår fjärde serverhall för ännu lägre latens och bättre redundans i hela Norden.</p>
+
+<div class="news-grid">
+
+<div class="news-item">
+<span class="news-date">14 Mars, 2024</span>
+<h4 class="news-title">Ny nod i Stockholm</h4>
+<p>Vi lanserar vår fjärde serverhall för ännu lägre latens och bättre redundans i hela Norden.</p>
+</div>
+
+<div class="news-item">
+<span class="news-date">02 Mars, 2024</span>
+<h4 class="news-title">PHP 8.3 Support</h4>
+<p>Nu kan du uppgradera dina miljöer till senaste PHP-versionen direkt via vår kontrollpanel.</p>
+</div>
+
+<div class="news-item">
+<span class="news-date">20 Feb, 2024</span>
+<h4 class="news-title">Gratis flytthjälp</h4>
+<p>Byt till oss idag! Vi flyttar din befintliga hemsida och e-post helt utan extra kostnad.</p>
+</div>
+
+</div>
+</section>
+
+<section id="reviews">
+<h2 class="section-title">Vad våra kunder säger</h2>
+<div class="review-grid">
+<div class="review-card">
+"Otrolig support och hastighet. Mina WordPress-sidor flyger verkligen efter flytten hit!"
+<span class="author">- Anders S, Webbutvecklare</span>
+</div>
+<div class="review-card">
+"99.99% uptime stämmer verkligen. Har haft mina tjänster här i 3 år utan ett enda avbrott."
+<span class="author">- Lisa V, E-handel</span>
+</div>
+<div class="review-card">
+"Smidig domänhantering och extremt bra priser på .se domäner. Rekommenderas varmt!"
+<span class="author">- Johan K, Entreprenör</span>
+</div>
+</div>
+</section>
+
+<footer>
+<p>&copy; 2026 snabb.host - Snabbast hosting i Sverige. Domäner, DNS &amp; flytt.</p>
+</footer>
+
+<script>
+function toggleTheme() {
+const body = document.body;
+const btn = document.getElementById('theme-toggle');
+if (body.getAttribute('data-theme') === 'dark') {
+body.removeAttribute('data-theme');
+btn.innerHTML = '🌙 Mörkt';
+localStorage.setItem('theme', 'light');
+} else {
+body.setAttribute('data-theme', 'dark');
+btn.innerHTML = '☀️ Ljust';
+localStorage.setItem('theme', 'dark');
+}}
+const menuLinks = document.getElementById('menu-links');
+const hamburgerBtn = document.getElementById('hamburger-btn');
+const overlay = document.getElementById('menu-overlay');
+function toggleMenu() {
+const isOpen = menuLinks.classList.toggle('open');
+hamburgerBtn.classList.toggle('active');
+overlay.style.display = isOpen ? 'block' : 'none';
+}
+function closeMenu() {
+menuLinks.classList.remove('open');
+hamburgerBtn.classList.remove('active');
+overlay.style.display = 'none';
+}
+overlay.addEventListener('click', closeMenu);
+document.querySelectorAll('.nav-links a').forEach(link => {
+link.addEventListener('click', closeMenu);
+});
+if (localStorage.getItem('theme') === 'dark') {
+document.body.setAttribute('data-theme', 'dark');
+document.getElementById('theme-toggle').innerHTML = '☀️ Ljust';
+}
+
+document.getElementById('searchBtn').addEventListener('click', async () => {
+const domain = document.getElementById('domainInput').value;
+const resultDiv = document.getElementById('search-result');
+const tbody = document.getElementById('tableBody');
+const apiKey = 'DIN_RAPIDAPI_NYCKEL_HÄR';
+const apiHost = 'whois-api1.p.rapidapi.com';
+if(!domain) return alert("Ange ett domännamn");
+try {
+const response = await fetch(`https://${apiHost}/whois?domain=${domain}`, {
+method: 'GET',
+headers: {
+'x-rapidapi-key': apiKey,
+'x-rapidapi-host': apiHost
+}
+});
+const data = await response.json();
+resultDiv.style.display = 'block';
+const isFree = data.is_available;
+tbody.innerHTML = `<tr><td style="font-weight: 500;">${data.domain_name || domain}</td>
+<td class="${isFree ? 'status-free' : 'status-taken'}">${isFree ? '● Ledig' : '○ Upptagen'}
+</td><td>${isFree ? '<button class="buy-btn">Välj</button>' : '-'}</td></tr>`;
+} catch (error) {
+console.error("Fel:", error);
+alert("Kan inte kontrollera domän namnet just nu.");
+}});
+</script>
+</body>
+</html>

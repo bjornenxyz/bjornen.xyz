@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>John Doe – CV</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #111;               /* Mörk bakgrund */
+            color: #eee;                          /* Ljus text */
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: #1e1e1e;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,.6);
+            overflow: hidden;
+        }
+
+        header {
+            background: #282828;
+            text-align: center;
+            padding: 2rem 1rem;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            margin-bottom: .2rem;
+        }
+
+        header h2 {
+            font-weight: normal;
+            color: #bbb;
+            font-size: 1.2rem;
+        }
+
+        section {
+            padding: 1.5rem 2rem;
+            border-top: 1px solid #333;
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            margin-bottom: .8rem;
+            color: #ffcc00;   /* Accentfärg */
+        }
+
+        p, li {
+            color: #ddd;
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        li::before {
+            content: "▹";
+            color: #ffcc00;
+            margin-right: .5rem;
+        }
+
+        /* ---- Kollapsbara block ---- */
+        .collapsible {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .collapsible::after {
+            content: "▼";
+            position: absolute;
+            right: 0;
+            transition: transform .2s;
+        }
+
+        .collapsible.active::after {
+            transform: rotate(-180deg);
+        }
+
+        .content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height .3s ease-out;
+        }
+
+        .content.open {
+            max-height: 500px; /* tillräckligt för innehållet */
+        }
+
+        /* ---- Responsivt ---- */
+        @media (max-width: 600px) {
+            header h1 {font-size: 1.8rem;}
+            header h2 {font-size: 1rem;}
+            section {padding: 1rem;}
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <!-- ==================== HEADER ==================== -->
+    <header>
+        <h1>John Doe</h1>
+        <h2>Full‑stack utvecklare | DevOps‑entusiast</h2>
+        <p>john.doe@email.com • +46 70 123 4567 • Stockholm, Sverige</p>
+    </header>
+
+    <!-- ==================== PROFIL ==================== -->
+    <section>
+        <h3>Profil</h3>
+        <p>Passionerad mjukvaruutvecklare med över 5 års erfarenhet av både frontend‑ och backend‑teknologier. Jag har byggt skalbara API:er, automatiserat CI/CD‑pipelines och levererat användarvänliga gränssnitt med fokus på prestanda och säkerhet.</p>
+    </section>
+
+    <!-- ==================== ERFARENHET ==================== -->
+    <section>
+        <h3>Arbetslivserfarenhet</h3>
+
+        <h4>Senior Full‑Stack Engineer – TechCo AB (2021‑nu)</h4>
+        <ul>
+            <li>Designade och implementerade en mikrotjänstarkitektur baserad på Node.js, Docker och Kubernetes.</li>
+            <li>Ledde migreringen från monolitisk PHP‑kod till en modern React‑frontend med GraphQL‑backend.</li>
+            <li>Införde GitHub Actions‑pipeline som minskade release‑tiden med 40 %.</li>
+        </ul>
+
+        <h4>Frontend Developer – StartupX (2018‑2021)</h4>
+        <ul>
+            <li>Skapade responsiva SPA:er med Vue.js och TailwindCSS.</li>
+            <li>Optimerade laddningstid genom kodsplitting och lazy‑loading.</li>
+            <li>Implementerade A/B‑testning för att förbättra konverteringsgraden med 15 %.</li>
+        </ul>
+    </section>
+
+    <!-- ==================== UTBILDNING ==================== -->
+    <section>
+        <h3>Utbildning</h3>
+        <p><strong>Kandidatexamen i Datavetenskap</strong>, KTH – Stockholm (2014‑2018)</p>
+    </section>
+
+    <!-- ==================== KOMPETENSER (Kollapsbar) ==================== -->
+    <section>
+        <h3 class="collapsible">Kompetenser ▾</h3>
+        <div class="content">
+            <ul>
+                <li>Programmeringsspråk: JavaScript/TypeScript, Python, Go, Rust</li>
+                <li>Frontend: React, Vue, Svelte, HTML5, CSS3, SCSS, Tailwind</li>
+                <li>Backend: Node.js, Express, NestJS, Django, FastAPI</li>
+                <li>Databaser: PostgreSQL, MongoDB, Redis</li>
+                <li>DevOps: Docker, Kubernetes, GitHub Actions, Terraform</li>
+                <li>CI/CD, Test‑driven utveckling, BDD</li>
+                <li>Molntjänster: AWS, GCP, Azure</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- ==================== INTRESSEN ==================== -->
+    <section>
+        <h3>Intressen</h3>
+        <p>Open‑source‑projekt, löpning, fotografi och att experimentera med AI‑modeller.</p>
+    </section>
+</div>
+
+<!-- ==== JavaScript för kollapsbar sektion ==== -->
+<script>
+    // Hitta alla element med klassen .collapsible
+    document.querySelectorAll('.collapsible').forEach(header => {
+        header.addEventListener('click', () => {
+            const content = header.nextElementSibling;
+            header.classList.toggle('active');
+            content.classList.toggle('open');
+        });
+    });
+</script>
+</body>
+</html>

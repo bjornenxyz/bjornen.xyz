@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+.alert {
+padding: 20px;
+background-color: #f44336;
+color: white;
+opacity: 1;
+transition: opacity 0.6s;
+margin-bottom: 15px;
+}
+.alert.success {background-color: #04AA6D;}
+.alert.info {background-color: #2196F3;}
+.alert.warning {background-color: #ff9800;}
+.closebtn {
+margin-left: 15px;
+color: white;
+font-weight: bold;
+float: right;
+font-size: 22px;
+line-height: 20px;
+cursor: pointer;
+transition: 0.3s;
+}
+.closebtn:hover {
+color: black;
+}
+</style>
+</head>
+<body>
+
+<div class="alert" id="alert-danger">
+<span class="closebtn">&times;</span>  
+<strong>Mycket viktigt:</strong> Meddelande till alla besökare.
+</div>
+
+<div class="alert success" id="alert-success">
+<span class="closebtn">&times;</span>  
+<strong>Nyheter:</strong> Meddelande till alla besökare..
+</div>
+
+<div class="alert info" id="alert-info">
+<span class="closebtn">&times;</span>
+<strong>Information:</strong> Meddelande till alla besökare..
+</div>
+
+<div class="alert warning" id="alert-warning">
+<span class="closebtn">&times;</span>
+<strong>Varning:</strong> Meddelande till alla besökare.
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+const alertIds = ["alert-danger", "alert-success", "alert-info", "alert-warning"];
+alertIds.forEach(function(alertId) {
+const alertElement = document.getElementById(alertId);
+if (localStorage.getItem(alertId) !== "true") {
+alertElement.style.display = "block";
+} else {
+alertElement.style.display = "none";
+}});
+var closeButtons = document.getElementsByClassName("closebtn");
+for (var i = 0; i < closeButtons.length; i++) {
+closeButtons[i].onclick = function() {
+var div = this.parentElement;
+div.style.opacity = "0";
+setTimeout(function() {
+div.style.display = "none";
+localStorage.setItem(div.id, "true");
+}, 600);
+}}
+});
+</script>
+</body>
+</html>
